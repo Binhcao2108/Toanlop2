@@ -29,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'cong-tru', label: 'Cộng Trừ Có Nhớ' },
     { id: 'lien-truoc-sau', label: 'Liền Trước & Sau' },
     { id: 'so-sanh', label: 'So Sánh Dãy Số' },
+    { id: 'toan-do', label: 'Toán Đố Lớp 2' },
   ];
 
   return (

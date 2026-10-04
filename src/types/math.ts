@@ -2,7 +2,7 @@
  * Type definitions for Grade 2 Math Learning App
  */
 
-export type TopicTab = 'tach-gop' | 'cong-tru' | 'lien-truoc-sau' | 'so-sanh' | 'sandbox';
+export type TopicTab = 'tach-gop' | 'cong-tru' | 'lien-truoc-sau' | 'so-sanh' | 'toan-do';
 
 export interface TachGopQuestion {
   id: string;
@@ -69,6 +69,29 @@ export interface SoSanhQuestion {
   sequence?: number[];
   orderType?: 'asc' | 'desc'; // asc: bé đến lớn, desc: lớn đến bé
   correctOrder?: number[];
+}
+
+export interface WordProblemQuestion {
+  id: string;
+  difficulty: 'basic' | 'advanced';
+  type: 'cho-con-lai' | 'so-sanh-hon' | 'them-tat-ca' | 'nhieu-hon' | 'it-hon';
+  typeTitle: string; // e.g., 'Bài toán cho đi & còn lại', 'So sánh dài hơn / nhiều hơn'
+  storyText: string;
+  questionText: string;
+  unitName: string; // e.g., 'viên kẹo', 'cm', 'bông hoa', 'viên bi', 'quả cam'
+  num1: number;
+  num2: number;
+  operation: '+' | '-';
+  result: number;
+  // Sơ đồ đoạn thẳng visual
+  item1Name: string;
+  item1Count: number;
+  item2Name: string;
+  item2Count?: number; // Target to find or given
+  difference?: number;
+  // Expected response details
+  solutionTitle: string; // Lời giải mẫu
+  hint: string;
 }
 
 export interface Badge {

@@ -4,6 +4,7 @@ import { TachGopSection } from './components/TachGopSection';
 import { CongTruCoNhoSection } from './components/CongTruCoNhoSection';
 import { LienTruocLienSauSection } from './components/LienTruocLienSauSection';
 import { SoSanhDaySoSection } from './components/SoSanhDaySoSection';
+import { ToanDoSection } from './components/ToanDoSection';
 import { QuizModal } from './components/QuizModal';
 import { BadgesModal } from './components/BadgesModal';
 import { PrintWorksheetModal } from './components/PrintWorksheetModal';
@@ -104,6 +105,13 @@ export default function App() {
       icon: <Scale className="w-5 h-5 text-emerald-700" />,
       color: 'bg-emerald-100/70 border-emerald-300 text-emerald-900',
     },
+    {
+      id: 'toan-do',
+      title: 'Toán Đố Lớp 2',
+      sub: 'Bài toán có lời văn & sơ đồ đoạn thẳng',
+      icon: <BookOpen className="w-5 h-5 text-indigo-700" />,
+      color: 'bg-indigo-100/70 border-indigo-300 text-indigo-900',
+    },
   ];
 
   return (
@@ -152,8 +160,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* 4 Topic Select Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          {/* 5 Topic Select Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
             {topicCards.map((card) => {
               const isCurrent = currentTab === card.id;
               return (
@@ -208,6 +216,10 @@ export default function App() {
 
           {currentTab === 'so-sanh' && (
             <SoSanhDaySoSection onEarnStar={() => handleEarnStar(1)} />
+          )}
+
+          {currentTab === 'toan-do' && (
+            <ToanDoSection onEarnStar={() => handleEarnStar(1)} />
           )}
         </section>
       </main>

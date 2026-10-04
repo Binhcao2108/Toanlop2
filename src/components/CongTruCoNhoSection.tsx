@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, HelpCircle, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, BookOpen, Layers } from 'lucide-react';
+import { Sparkles, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, BookOpen, Layers, Check } from 'lucide-react';
 import { CongTruQuestion } from '../types/math';
-import { generateCongTruQuestion } from '../utils/mathGenerators';
+import { generateCongTruQuestion, CongTruRange } from '../utils/mathGenerators';
 import { NumberPad } from './NumberPad';
 import { BaseTenVisualizer } from './BaseTenVisualizer';
 import { sound } from '../utils/audio';
@@ -12,365 +12,367 @@ interface CongTruCoNhoSectionProps {
 
 export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarnStar }) => {
   const [opChoice, setOpChoice] = useState<'+' | '-' | 'both'>('both');
-  const [mode, setMode] = useState<'standard' | 'step-by-step'>('standard');
-  const [question, setQuestion] = useState<CongTruQuestion>(() => generateCongTruQuestion());
-  const [userInput, setUserInput] = useState<string>('');
+  const [rangeChoice, setRangeChoice] = useState<CongTruRange>('within100');
   
-  // Step-by-step mode states
-  const [step, setStep] = useState<1 | 2>(1);
-  const [step1UnitInput, setStep1UnitInput] = useState<string>('');
-  const [step2TensInput, setStep2TensInput] = useState<string>('');
-  const [carryBoxFilled, setCarryBoxFilled] = useState<boolean>(false);
+  const [question, setQuestion] = useState<CongTruQuestion>(() =>
+    generateCongTruQuestion({ operation: '+', range: 'within100' })
+  );
+  
+  // 3 distinct inputs filled by the child before checking:
+  // 1. unitInput: Chữ số hàng đơn vị
+  // 2. tensInput: Chữ số hàng chục
+  // 3. carryInput: Ô nhớ 1 ở phía bên phải phép tính
+  const [unitInput, setUnitInput] = useState<string>('');
+  const [tensInput, setTensInput] = useState<string>('');
+  const [carryInput, setCarryInput] = useState<string>('');
+  
+  const [activeSlot, setActiveSlot] = useState<'unit' | 'tens' | 'carry'>('unit');
 
+  // Evaluation states: only checked when user clicks "Kiểm tra kết quả"
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
-  const [showSticks, setShowSticks] = useState<boolean>(true);
+  const [showSticks, setShowSticks] = useState<boolean>(false);
   const [streak, setStreak] = useState<number>(0);
 
-  const nextQuestion = (op = opChoice) => {
+  const nextQuestion = (op = opChoice, range = rangeChoice) => {
     const chosenOp = op === 'both' ? (Math.random() < 0.5 ? '+' : '-') : op;
-    setQuestion(generateCongTruQuestion(chosenOp));
-    setUserInput('');
-    setStep(1);
-    setStep1UnitInput('');
-    setStep2TensInput('');
-    setCarryBoxFilled(false);
+    const q = generateCongTruQuestion({ operation: chosenOp, range });
+    setQuestion(q);
+    setUnitInput('');
+    setTensInput('');
+    setCarryInput('');
+    setActiveSlot('unit');
     setStatus('idle');
+    setErrorMessage('');
     setShowExplanation(false);
   };
 
   const handleOpChoiceChange = (newOp: '+' | '-' | 'both') => {
     setOpChoice(newOp);
-    nextQuestion(newOp);
+    nextQuestion(newOp, rangeChoice);
   };
 
-  const handleCheckStandard = () => {
-    if (!userInput.trim()) return;
-    const ans = parseInt(userInput, 10);
-    if (ans === question.result) {
-      sound.playCorrect();
-      setStatus('correct');
-      setStreak((s) => s + 1);
-      onEarnStar();
-    } else {
-      sound.playIncorrect();
-      setStatus('wrong');
-    }
+  const handleRangeChange = (newRange: CongTruRange) => {
+    sound.playClick();
+    setRangeChoice(newRange);
+    nextQuestion(opChoice, newRange);
   };
 
-  const handleCheckStep1 = () => {
+  // "Làm xong rồi mới kiểm tra đúng hay sai"
+  const handleCheck = () => {
     const expectedUnit = question.result % 10;
-    const ans = parseInt(step1UnitInput, 10);
-    if (ans === expectedUnit) {
-      sound.playCorrect();
-      setCarryBoxFilled(true);
-      setStep(2);
-      setStatus('idle');
-    } else {
-      sound.playIncorrect();
-      setStatus('wrong');
-    }
-  };
-
-  const handleCheckStep2 = () => {
     const expectedTens = Math.floor(question.result / 10);
-    const ans = parseInt(step2TensInput, 10);
-    if (ans === expectedTens) {
+    const expectedCarry = 1; // Both addition with carry and subtraction with borrow require 1
+
+    const u = parseInt(unitInput, 10);
+    const t = parseInt(tensInput, 10);
+    const c = parseInt(carryInput, 10);
+
+    const isResultCorrect = u === expectedUnit && t === expectedTens;
+    const isCarryCorrect = c === expectedCarry;
+
+    if (isResultCorrect && isCarryCorrect) {
       sound.playCorrect();
       setStatus('correct');
+      setErrorMessage('');
       setStreak((s) => s + 1);
       onEarnStar();
     } else {
       sound.playIncorrect();
       setStatus('wrong');
+      if (!isResultCorrect && !isCarryCorrect) {
+        setErrorMessage('Kết quả và số nhớ đều chưa đúng, bé hãy tính lại nhé!');
+      } else if (!isResultCorrect) {
+        setErrorMessage('Kết quả tính chưa đúng, bé kiểm tra lại hàng đơn vị và hàng chục nhé!');
+      } else {
+        setErrorMessage('Kết quả tính đúng rồi, nhưng ở ô bên phải bé cần điền số nhớ 1 nhé!');
+      }
     }
+  };
+
+  const handleDigit = (d: string) => {
+    if (activeSlot === 'unit') {
+      setUnitInput(d);
+      setActiveSlot('tens');
+    } else if (activeSlot === 'tens') {
+      setTensInput(d);
+      setActiveSlot('carry');
+    } else {
+      setCarryInput(d);
+    }
+    setStatus('idle');
+  };
+
+  const handleDelete = () => {
+    if (activeSlot === 'unit') setUnitInput('');
+    else if (activeSlot === 'tens') setTensInput('');
+    else setCarryInput('');
+    setStatus('idle');
+  };
+
+  const handleClear = () => {
+    setUnitInput('');
+    setTensInput('');
+    setCarryInput('');
+    setActiveSlot('unit');
+    setStatus('idle');
   };
 
   // Keyboard support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key >= '0' && e.key <= '9') {
-        if (mode === 'standard') {
-          if (userInput.length < 3) {
-            setUserInput((prev) => prev + e.key);
-            setStatus('idle');
-          }
-        } else {
-          if (step === 1 && step1UnitInput.length < 1) {
-            setStep1UnitInput(e.key);
-            setStatus('idle');
-          } else if (step === 2 && step2TensInput.length < 2) {
-            setStep2TensInput((prev) => prev + e.key);
-            setStatus('idle');
-          }
-        }
+        handleDigit(e.key);
       } else if (e.key === 'Backspace') {
-        if (mode === 'standard') {
-          setUserInput((prev) => prev.slice(0, -1));
-        } else {
-          if (step === 1) setStep1UnitInput('');
-          else setStep2TensInput((prev) => prev.slice(0, -1));
-        }
-        setStatus('idle');
+        handleDelete();
       } else if (e.key === 'Enter') {
         if (status === 'correct') {
           nextQuestion();
-        } else if (mode === 'standard') {
-          handleCheckStandard();
         } else {
-          if (step === 1) handleCheckStep1();
-          else handleCheckStep2();
+          handleCheck();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [userInput, step, step1UnitInput, step2TensInput, mode, status, question]);
+  }, [unitInput, tensInput, carryInput, activeSlot, status, question]);
+
+  const isAddition = question.operation === '+';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-amber-200/80 shadow-xs">
-        {/* Operation Filter */}
-        <div className="flex items-center gap-1 p-1 bg-amber-50 rounded-xl border border-amber-200/60">
-          <button
-            type="button"
-            onClick={() => handleOpChoiceChange('both')}
-            className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer ${
-              opChoice === 'both' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-100'
-            }`}
-          >
-            Cả Cộng & Trừ
-          </button>
-          <button
-            type="button"
-            onClick={() => handleOpChoiceChange('+')}
-            className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer ${
-              opChoice === '+' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-100'
-            }`}
-          >
-            + Cộng có nhớ
-          </button>
-          <button
-            type="button"
-            onClick={() => handleOpChoiceChange('-')}
-            className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer ${
-              opChoice === '-' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-100'
-            }`}
-          >
-            - Trừ có nhớ
-          </button>
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-amber-200/80 shadow-xs space-y-3">
+        {/* Row 1: Phép tính (+, -, Cả hai) */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1 p-1 bg-amber-50 rounded-xl border border-amber-200/60">
+            <button
+              type="button"
+              onClick={() => handleOpChoiceChange('both')}
+              className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer ${
+                opChoice === 'both' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-100'
+              }`}
+            >
+              Cả Cộng & Trừ
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpChoiceChange('+')}
+              className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer ${
+                opChoice === '+' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-100'
+              }`}
+            >
+              + Cộng có nhớ
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpChoiceChange('-')}
+              className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer ${
+                opChoice === '-' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-100'
+              }`}
+            >
+              - Trừ có nhớ
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 text-xs font-bold text-amber-800">
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <span>Liên tiếp: {streak}</span>
+          </div>
         </div>
 
-        {/* Learning Mode */}
-        <div className="flex items-center gap-1.5 text-xs">
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              setMode('standard');
-            }}
-            className={`px-2.5 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-              mode === 'standard' ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Tự tính nhanh
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              setMode('step-by-step');
-            }}
-            className={`px-2.5 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-              mode === 'step-by-step' ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Hướng dẫn từng bước
-          </button>
+        {/* Row 2: Chọn khoảng số ra đề */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-amber-100 text-xs">
+          <span className="font-bold text-amber-900 shrink-0">Chọn khoảng số ra đề:</span>
+          {[
+            { id: 'within100' as CongTruRange, label: 'Phạm vi ≤ 100' },
+            { id: 'within50' as CongTruRange, label: 'Phạm vi ≤ 50' },
+            { id: 'within20' as CongTruRange, label: 'Phạm vi ≤ 20' },
+            { id: 'twoDigitPlusOne' as CongTruRange, label: '2 chữ số với 1 chữ số' },
+          ].map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => handleRangeChange(r.id)}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
+                rangeChoice === r.id
+                  ? 'bg-amber-500 text-white shadow-xs font-bold'
+                  : 'bg-slate-100 text-slate-700 hover:bg-amber-100'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Main Learning Stage */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Vertical Column Math & Visual Que Tính */}
+        {/* Left Column: Vertical Math & Ô NHỚ PHÍA BÊN PHẢI */}
         <div className="lg:col-span-7 bg-white p-5 sm:p-6 rounded-2xl border border-amber-200/80 shadow-xs space-y-6">
-          <div className="flex items-center justify-between border-b border-amber-100 pb-3">
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">
-                {question.operation === '+'
-                  ? 'Phép cộng có nhớ trong phạm vi 100'
-                  : 'Phép trừ có nhớ trong phạm vi 100'}
-              </h2>
-              <p className="text-xs text-slate-500">
-                Đặt tính rồi tính theo cột dọc (Tính từ phải sang trái)
-              </p>
-            </div>
-            <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 text-xs font-bold text-amber-800">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Liên tiếp: {streak}</span>
-            </div>
+          <div className="border-b border-amber-100 pb-3">
+            <h2 className="text-lg font-bold text-slate-800">
+              {isAddition ? 'Đặt tính phép cộng có nhớ' : 'Đặt tính phép trừ có nhớ'}
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Bé điền kết quả vào cột dọc và điền số <strong>nhớ 1</strong> vào ô bên phải, làm xong bấm <strong>Kiểm tra</strong> nhé!
+            </p>
           </div>
 
-          {/* CHUẨN CỘT DỌC ĐẶT TÍNH RỒI TÍNH CỦA TIỂU HỌC VIỆT NAM */}
-          <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-200/80 flex flex-col items-center">
-            {/* Headers: Chục & Đơn vị */}
-            <div className="w-56 grid grid-cols-2 text-center text-xs font-bold text-slate-500 mb-2 border-b border-dashed border-amber-300 pb-1">
-              <span className="text-amber-800">Hàng Chục</span>
-              <span className="text-blue-800">Hàng Đơn Vị</span>
-            </div>
-
-            {/* Math layout */}
-            <div className="relative w-56 font-mono text-3xl sm:text-4xl font-black text-slate-900 leading-tight">
-              {/* Carry / Borrow Memory Circle on top of Tens column */}
-              <div className="flex justify-start pl-8 mb-1">
-                <div
-                  className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center border transition-all ${
-                    carryBoxFilled || showExplanation || status === 'correct'
-                      ? 'bg-rose-500 border-rose-600 text-white scale-110 shadow-xs'
-                      : 'bg-amber-100 border-amber-300 text-amber-600 border-dashed'
-                  }`}
-                  title="Ô ghi nhớ (nhớ 1 sang hàng chục)"
-                >
-                  {carryBoxFilled || showExplanation || status === 'correct' ? '1' : 'nhớ'}
+          {/* ========================================================================= */}
+          {/* KHUNG PHÉP TÍNH BÊN TRÁI & Ô ĐIỀN NHỚ 1 BÊN PHẢI                           */}
+          {/* ========================================================================= */}
+          <div className="bg-gradient-to-b from-amber-50/70 via-orange-50/40 to-amber-50/70 p-5 sm:p-7 rounded-2xl border border-amber-200/80 flex flex-col items-center">
+            
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8">
+              
+              {/* PHÍA TRÁI: KHUNG ĐẶT TÍNH CỘT DỌC THẲNG HÀNG */}
+              <div className="w-56 bg-white p-4 rounded-2xl border-2 border-amber-300 shadow-sm">
+                
+                {/* Header: Hàng Chục & Hàng Đơn Vị */}
+                <div className="grid grid-cols-2 text-center text-xs font-bold border-b border-amber-200 pb-1.5 mb-2">
+                  <span className="text-amber-800 bg-amber-50 py-0.5 rounded-l-md border-r border-amber-200">
+                    Hàng Chục
+                  </span>
+                  <span className="text-blue-800 bg-blue-50 py-0.5 rounded-r-md">
+                    Hàng Đơn Vị
+                  </span>
                 </div>
-              </div>
 
-              {/* Number 1 */}
-              <div className="grid grid-cols-2 text-center py-1">
-                <span className="text-amber-900">{question.tens1}</span>
-                <span className="text-blue-900">{question.unit1}</span>
-              </div>
-
-              {/* Operator & Number 2 */}
-              <div className="relative grid grid-cols-2 text-center py-1">
-                <span className="absolute -left-4 sm:-left-6 top-1 text-2xl sm:text-3xl font-extrabold text-amber-600 font-sans">
-                  {question.operation}
-                </span>
-                <span className="text-amber-900">{question.tens2}</span>
-                <span className="text-blue-900">{question.unit2}</span>
-              </div>
-
-              {/* Divider Line */}
-              <div className="w-full h-1 bg-slate-800 rounded-full my-2" />
-
-              {/* Result Row */}
-              {mode === 'standard' ? (
-                <div className="grid grid-cols-2 text-center py-1">
-                  <div className="col-span-2 flex items-center justify-center">
-                    <span
-                      className={`min-w-[100px] h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-black tracking-wider transition-all shadow-inner ${
-                        status === 'correct'
-                          ? 'bg-emerald-100 border-emerald-500 text-emerald-900'
-                          : status === 'wrong'
-                          ? 'bg-rose-50 border-rose-400 text-rose-800'
-                          : userInput
-                          ? 'bg-white border-amber-500 text-slate-900 shadow-sm'
-                          : 'bg-white border-dashed border-amber-300 text-slate-300 animate-pulse'
-                      }`}
-                    >
-                      {userInput || '?'}
-                    </span>
+                {/* SỐ THỨ NHẤT */}
+                <div className="grid grid-cols-2 text-center text-3xl font-black font-mono py-1.5 border-b border-slate-100">
+                  <div className="text-amber-900 border-r border-slate-100">
+                    {question.tens1 > 0 ? question.tens1 : ''}
+                  </div>
+                  <div className="text-blue-900">
+                    {question.unit1}
                   </div>
                 </div>
-              ) : (
-                /* Step-by-step separated digits */
-                <div className="grid grid-cols-2 text-center py-1 gap-2">
-                  {/* Tens digit */}
+
+                {/* DẤU VÀ SỐ THỨ HAI */}
+                <div className="relative grid grid-cols-2 text-center text-3xl font-black font-mono py-1.5">
+                  <div className="absolute -left-3 top-1 text-2xl font-black text-amber-700 font-sans">
+                    {question.operation}
+                  </div>
+                  <div className="text-amber-900 border-r border-slate-100">
+                    {question.tens2 > 0 ? question.tens2 : ''}
+                  </div>
+                  <div className="text-blue-900">
+                    {question.unit2}
+                  </div>
+                </div>
+
+                {/* ĐƯỜNG KẺ NGANG */}
+                <div className="w-full h-1 bg-slate-900 rounded-full my-2" />
+
+                {/* HAI Ô KẾT QUẢ THẲNG TẮP DƯỚI HÀNG CHỤC VÀ ĐƠN VỊ */}
+                <div className="grid grid-cols-2 gap-2 text-center py-1">
+                  {/* Ô Chữ số Hàng Chục */}
                   <div
-                    className={`h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-black transition-all ${
-                      step === 2
-                        ? 'border-amber-500 bg-amber-100 text-amber-950 animate-pulse-glow'
-                        : step2TensInput || status === 'correct'
+                    onClick={() => {
+                      sound.playClick();
+                      setActiveSlot('tens');
+                    }}
+                    className={`h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-black font-mono transition-all cursor-pointer ${
+                      activeSlot === 'tens'
+                        ? 'border-amber-500 bg-amber-100 text-amber-950 scale-105 shadow-sm animate-pulse-glow'
+                        : tensInput
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                        : 'border-dashed border-slate-300 bg-slate-50 text-slate-300'
+                        : 'border-dashed border-amber-300 bg-amber-50/50 text-slate-300'
+                    }`}
+                    title="Bấm để nhập chữ số hàng chục"
+                  >
+                    {tensInput || '?'}
+                  </div>
+
+                  {/* Ô Chữ số Hàng Đơn Vị */}
+                  <div
+                    onClick={() => {
+                      sound.playClick();
+                      setActiveSlot('unit');
+                    }}
+                    className={`h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-black font-mono transition-all cursor-pointer ${
+                      activeSlot === 'unit'
+                        ? 'border-blue-500 bg-blue-100 text-blue-950 scale-105 shadow-sm animate-pulse-glow'
+                        : unitInput
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                        : 'border-dashed border-blue-300 bg-blue-50/50 text-slate-300'
+                    }`}
+                    title="Bấm để nhập chữ số hàng đơn vị"
+                  >
+                    {unitInput || '?'}
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-center text-slate-400 mt-1 font-semibold">
+                  (Bấm ô để nhập số)
+                </div>
+              </div>
+
+              {/* PHÍA BÊN PHẢI PHÉP TÍNH: Ô ĐIỀN NHỚ 1 (YÊU CẦU CỦA BẠN) */}
+              <div
+                onClick={() => {
+                  sound.playClick();
+                  setActiveSlot('carry');
+                }}
+                className={`w-36 bg-white p-3.5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm flex flex-col items-center justify-between min-h-[180px] ${
+                  activeSlot === 'carry'
+                    ? 'border-rose-500 ring-2 ring-rose-400 bg-rose-50/30 scale-105 animate-pulse-glow'
+                    : carryInput
+                    ? 'border-rose-400 bg-rose-50/20'
+                    : 'border-dashed border-rose-300 hover:border-rose-400'
+                }`}
+                title="Bấm để điền số nhớ vào đây"
+              >
+                <div className="text-center">
+                  <span className="text-xs font-black text-rose-700 uppercase tracking-tight block">
+                    {isAddition ? 'Ghi Nhớ' : 'Mượn / Nhớ'}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-semibold block">
+                    (Phía bên phải)
+                  </span>
+                </div>
+
+                {/* Ô vuông to điền số nhớ 1 */}
+                <div className="my-2">
+                  <div
+                    className={`w-14 h-14 rounded-2xl border-3 flex items-center justify-center text-3xl font-black transition-all ${
+                      carryInput
+                        ? 'bg-rose-500 border-rose-600 text-white shadow-md'
+                        : 'bg-white border-dashed border-rose-400 text-rose-300'
                     }`}
                   >
-                    {status === 'correct'
-                      ? Math.floor(question.result / 10)
-                      : step2TensInput || (step === 2 ? '?' : '—')}
+                    {carryInput || '?'}
                   </div>
-
-                  {/* Units digit */}
-                  <div
-                    className={`h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-black transition-all ${
-                      step === 1
-                        ? 'border-blue-500 bg-blue-100 text-blue-950 animate-pulse-glow'
-                        : step1UnitInput
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                        : 'border-dashed border-slate-300 bg-slate-50 text-slate-300'
-                    }`}
-                  >
-                    {step1UnitInput || (step === 1 ? '?' : question.result % 10)}
-                  </div>
+                  <span className="text-[11px] font-bold text-rose-800 text-center block mt-1">
+                    Nhớ 1
+                  </span>
                 </div>
-              )}
+
+                <div className="text-[10px] text-center text-slate-500 leading-tight">
+                  {isAddition
+                    ? 'Cộng đơn vị dư ➔ điền nhớ 1'
+                    : 'Mượn 1 chục ➔ điền nhớ 1'}
+                </div>
+              </div>
             </div>
 
-            {/* Guided Prompt for Step-by-Step */}
-            {mode === 'step-by-step' && status !== 'correct' && (
-              <div className="mt-4 p-3 bg-white rounded-xl border border-amber-200 text-xs sm:text-sm text-slate-700 text-center font-medium shadow-xs max-w-md">
-                {step === 1 ? (
-                  <div>
-                    <span className="font-bold text-blue-700">Bước 1: Tính hàng đơn vị</span>
-                    <p className="mt-1">{question.step1Text}</p>
-                    <p className="text-amber-800 font-bold mt-1">Bé hãy nhập chữ số hàng đơn vị vào ô bên phải nhé!</p>
-                  </div>
-                ) : (
-                  <div>
-                    <span className="font-bold text-amber-700">Bước 2: Tính hàng chục</span>
-                    <p className="mt-1">{question.step2Text}</p>
-                    <p className="text-amber-800 font-bold mt-1">Bé hãy nhập chữ số hàng chục vào ô bên trái nhé!</p>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Trạng thái nhắc nhở khi bé đang làm */}
+            <div className="mt-4 text-xs font-semibold text-slate-600 bg-white/80 px-4 py-2 rounded-xl border border-amber-200">
+              {activeSlot === 'unit' && '👉 Bé đang nhập Chữ số Hàng Đơn Vị (cột bên phải)'}
+              {activeSlot === 'tens' && '👉 Bé đang nhập Chữ số Hàng Chục (cột bên trái)'}
+              {activeSlot === 'carry' && '👉 Bé đang nhập Ô Ghi Nhớ 1 (ở phía bên phải phép tính)'}
+            </div>
           </div>
 
-          {/* Interactive Base-Ten / Que Tính Visualizer Toggle */}
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setShowSticks(!showSticks)}
-              className="flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950 cursor-pointer"
-            >
-              <Layers className="w-4 h-4 text-amber-600" />
-              <span>{showSticks ? 'Ẩn mô hình que tính' : 'Xem mô hình que tính trực quan'}</span>
-            </button>
-
-            {showSticks && (
-              <div className="space-y-2 bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200">
-                <BaseTenVisualizer
-                  tens={question.tens1}
-                  units={question.unit1}
-                  label={`Số thứ nhất: ${question.num1}`}
-                  color="amber"
-                />
-                <BaseTenVisualizer
-                  tens={question.tens2}
-                  units={question.unit2}
-                  label={`Số thứ hai: ${question.num2}`}
-                  color="blue"
-                />
-                {status === 'correct' && (
-                  <BaseTenVisualizer
-                    tens={Math.floor(question.result / 10)}
-                    units={question.result % 10}
-                    label={`Kết quả: ${question.result}`}
-                    color="emerald"
-                  />
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Feedback & Navigation Actions */}
+          {/* Feedback & Actions */}
           <div className="space-y-3">
             {status === 'correct' && (
               <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-2 animate-pop">
                 <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm sm:text-base">
                   <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                  <span>Bé tính chuẩn xác rồi! Nhận ngay +1 ★</span>
+                  <span>Bé tính chuẩn xác và ghi nhớ số 1 rất giỏi! +1 ★</span>
                 </div>
                 <button
                   type="button"
@@ -385,20 +387,19 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
 
             {status === 'wrong' && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-700 text-sm font-medium">
-                <span>Chưa đúng rồi! Bé nhớ cộng thêm hoặc mượn 1 chục nhé!</span>
+                <span>{errorMessage || 'Chưa đúng rồi! Bé hãy kiểm tra lại kết quả hoặc số nhớ 1 nhé!'}</span>
                 <button
                   type="button"
                   onClick={() => {
-                    setUserInput('');
-                    if (mode === 'step-by-step') {
-                      if (step === 1) setStep1UnitInput('');
-                      else setStep2TensInput('');
-                    }
+                    setUnitInput('');
+                    setTensInput('');
+                    setCarryInput('');
+                    setActiveSlot('unit');
                     setStatus('idle');
                   }}
                   className="text-xs font-bold underline hover:text-rose-900 cursor-pointer ml-2"
                 >
-                  Thử lại
+                  Làm lại
                 </button>
               </div>
             )}
@@ -430,8 +431,9 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
                   <span>Lời giải từng bước chuẩn sách giáo khoa:</span>
                 </div>
                 <div className="pl-2 border-l-2 border-amber-400 space-y-1">
-                  <p>• <strong>Bước 1 (Tính hàng đơn vị):</strong> {question.step1Text}</p>
-                  <p>• <strong>Bước 2 (Tính hàng chục):</strong> {question.step2Text}</p>
+                  <p>• <strong>Bước 1 (Hàng đơn vị):</strong> {question.step1Text}</p>
+                  <p>• <strong>Bước 2 (Hàng chục):</strong> {question.step2Text}</p>
+                  <p>• <strong>Ô nhớ bên phải:</strong> Điền số <strong>1</strong>.</p>
                   <p className="font-bold text-emerald-800 pt-1">
                     👉 Vậy {question.num1} {question.operation} {question.num2} = {question.result}
                   </p>
@@ -441,70 +443,85 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
           </div>
         </div>
 
-        {/* Right Column: Number Pad */}
+        {/* Right Column: Number Pad & 3 Slot Selector */}
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-xs">
+            {/* 3 Slot Switcher Buttons */}
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setActiveSlot('unit');
+                }}
+                className={`py-2 px-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer text-center ${
+                  activeSlot === 'unit'
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                    : 'bg-blue-50 text-blue-900 border-blue-200'
+                }`}
+              >
+                Đơn vị: <span className="font-black text-sm">{unitInput || '?'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setActiveSlot('tens');
+                }}
+                className={`py-2 px-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer text-center ${
+                  activeSlot === 'tens'
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                    : 'bg-amber-50 text-amber-900 border-amber-200'
+                }`}
+              >
+                Hàng chục: <span className="font-black text-sm">{tensInput || '?'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setActiveSlot('carry');
+                }}
+                className={`py-2 px-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer text-center ${
+                  activeSlot === 'carry'
+                    ? 'bg-rose-500 text-white border-rose-600 shadow-xs'
+                    : 'bg-rose-50 text-rose-900 border-rose-200'
+                }`}
+              >
+                Ô nhớ: <span className="font-black text-sm">{carryInput || '?'}</span>
+              </button>
+            </div>
+
             <div className="text-center mb-3">
               <span className="text-xs text-slate-500 font-semibold">
-                {mode === 'standard'
-                  ? 'Kết quả bé nhập:'
-                  : step === 1
-                  ? 'Chữ số hàng đơn vị:'
-                  : 'Chữ số hàng chục:'}
+                {activeSlot === 'unit'
+                  ? 'Bé đang nhập Chữ số Hàng Đơn Vị:'
+                  : activeSlot === 'tens'
+                  ? 'Bé đang nhập Chữ số Hàng Chục:'
+                  : 'Bé đang nhập Ô Nhớ 1 Bên Phải:'}
               </span>
               <div className="text-3xl font-black text-amber-900 h-10 flex items-center justify-center">
-                {mode === 'standard' ? (
-                  userInput || <span className="text-slate-300 font-normal text-2xl">Bấm số...</span>
-                ) : step === 1 ? (
-                  step1UnitInput || <span className="text-slate-300 font-normal text-2xl">Nhập đơn vị...</span>
-                ) : (
-                  step2TensInput || <span className="text-slate-300 font-normal text-2xl">Nhập hàng chục...</span>
-                )}
+                {(activeSlot === 'unit'
+                  ? unitInput
+                  : activeSlot === 'tens'
+                  ? tensInput
+                  : carryInput) || <span className="text-slate-300 font-normal text-2xl">Bấm số...</span>}
               </div>
             </div>
 
+            {/* Bàn phím số to */}
             <NumberPad
-              onNumberClick={(d) => {
-                if (mode === 'standard') {
-                  if (userInput.length < 3) {
-                    setUserInput((prev) => prev + d);
-                    setStatus('idle');
-                  }
-                } else {
-                  if (step === 1 && step1UnitInput.length < 1) {
-                    setStep1UnitInput(d);
-                    setStatus('idle');
-                  } else if (step === 2 && step2TensInput.length < 2) {
-                    setStep2TensInput((prev) => prev + d);
-                    setStatus('idle');
-                  }
-                }
-              }}
-              onDelete={() => {
-                if (mode === 'standard') {
-                  setUserInput((prev) => prev.slice(0, -1));
-                } else {
-                  if (step === 1) setStep1UnitInput('');
-                  else setStep2TensInput((prev) => prev.slice(0, -1));
-                }
-                setStatus('idle');
-              }}
-              onClear={() => {
-                if (mode === 'standard') setUserInput('');
-                else {
-                  if (step === 1) setStep1UnitInput('');
-                  else setStep2TensInput('');
-                }
-                setStatus('idle');
-              }}
-              onSubmit={() => {
-                if (mode === 'standard') handleCheckStandard();
-                else if (step === 1) handleCheckStep1();
-                else handleCheckStep2();
-              }}
+              onNumberClick={handleDigit}
+              onDelete={handleDelete}
+              onClear={handleClear}
+              onSubmit={handleCheck}
               submitDisabled={
                 status === 'correct' ||
-                (mode === 'standard' ? !userInput : step === 1 ? !step1UnitInput : !step2TensInput)
+                !unitInput ||
+                !tensInput ||
+                !carryInput
               }
             />
           </div>
