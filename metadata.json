@@ -1,0 +1,6 @@
+{
+  "name": "Bé Học Toán Lớp 2",
+  "description": "Ứng dụng trực quan học Toán lớp 2: Tách gộp số, cộng trừ có nhớ trong phạm vi 100, số liền trước và liền sau 1-150, và so sánh dãy số.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
