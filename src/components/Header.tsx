@@ -1,7 +1,8 @@
 import React from 'react';
-import { Volume2, VolumeX, Award, Printer, Sparkles, BookOpen } from 'lucide-react';
+import { Volume2, VolumeX, Award, Printer, Sparkles, BookOpen, Keyboard } from 'lucide-react';
 import { TopicTab } from '../types/math';
 import { sound } from '../utils/audio';
+import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface HeaderProps {
   currentTab: TopicTab;
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenPrint,
   onOpenQuiz,
 }) => {
+  const { virtualKeypadEnabled, toggleVirtualKeypad } = useVirtualKeypad();
   const navItems: { id: TopicTab; label: string }[] = [
     { id: 'tach-gop', label: 'Tách Gộp Số' },
     { id: 'cong-tru', label: 'Cộng Trừ Có Nhớ' },
@@ -133,6 +135,33 @@ export const Header: React.FC<HeaderProps> = ({
             title={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </button>
+
+          {/* Virtual Keypad Toggle Button (Nút gạt bật/tắt bàn phím ảo toàn ứng dụng) */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              toggleVirtualKeypad();
+            }}
+            className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border flex items-center gap-1.5 cursor-pointer transition-colors text-xs font-bold whitespace-nowrap ${
+              virtualKeypadEnabled
+                ? 'bg-amber-100 border-amber-300 text-amber-950 shadow-2xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400 hover:text-slate-600'
+            }`}
+            title={
+              virtualKeypadEnabled
+                ? 'Bàn phím ảo khi bấm ?: Đang BẬT cho tất cả giao diện (bấm để tắt)'
+                : 'Bàn phím ảo khi bấm ?: Đang TẮT cho tất cả giao diện (bấm để bật)'
+            }
+          >
+            <Keyboard className={`w-4 h-4 ${virtualKeypadEnabled ? 'text-amber-600' : 'text-slate-400'}`} />
+            <span className="hidden sm:inline">Phím ảo</span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                virtualKeypadEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+              }`}
+            />
           </button>
         </div>
       </div>

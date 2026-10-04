@@ -4,12 +4,14 @@ import { LienTruocSauQuestion } from '../types/math';
 import { generateLienTruocSauQuestion } from '../utils/mathGenerators';
 import { NumberPad } from './NumberPad';
 import { sound } from '../utils/audio';
+import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface LienTruocLienSauSectionProps {
   onEarnStar: () => void;
 }
 
 export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = ({ onEarnStar }) => {
+  const { openKeypad, updateKeypadValue, closeKeypad } = useVirtualKeypad();
   const [question, setQuestion] = useState<LienTruocSauQuestion>(() => generateLienTruocSauQuestion());
   
   // Focused slot when both before & after need to be answered
@@ -31,6 +33,7 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
     setInputMiddle('');
     setStatus('idle');
     setNumberLineCenter(q.targetNumber);
+    closeKeypad();
     if (q.type === 'after') setActiveSlot('after');
     else if (q.type === 'middle') setActiveSlot('middle');
     else setActiveSlot('before');
@@ -206,6 +209,30 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                   if (question.type === 'before' || question.type === 'both') {
                     sound.playClick();
                     setActiveSlot('before');
+                    openKeypad({
+                      title: 'Số liền trước (-1)',
+                      value: inputBefore,
+                      onDigit: (d) => {
+                        if (inputBefore.length < 3) {
+                          const next = inputBefore + d;
+                          setInputBefore(next);
+                          updateKeypadValue(next);
+                          setStatus('idle');
+                        }
+                      },
+                      onDelete: () => {
+                        const next = inputBefore.slice(0, -1);
+                        setInputBefore(next);
+                        updateKeypadValue(next);
+                        setStatus('idle');
+                      },
+                      onClear: () => {
+                        setInputBefore('');
+                        updateKeypadValue('');
+                        setStatus('idle');
+                      },
+                      onSubmit: handleCheck,
+                    });
                   }
                 }}
                 className={`flex flex-col items-center shrink-0 transition-transform ${
@@ -247,6 +274,30 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                   if (question.type === 'middle') {
                     sound.playClick();
                     setActiveSlot('middle');
+                    openKeypad({
+                      title: 'Số ở giữa',
+                      value: inputMiddle,
+                      onDigit: (d) => {
+                        if (inputMiddle.length < 3) {
+                          const next = inputMiddle + d;
+                          setInputMiddle(next);
+                          updateKeypadValue(next);
+                          setStatus('idle');
+                        }
+                      },
+                      onDelete: () => {
+                        const next = inputMiddle.slice(0, -1);
+                        setInputMiddle(next);
+                        updateKeypadValue(next);
+                        setStatus('idle');
+                      },
+                      onClear: () => {
+                        setInputMiddle('');
+                        updateKeypadValue('');
+                        setStatus('idle');
+                      },
+                      onSubmit: handleCheck,
+                    });
                   }
                 }}
                 className={`flex flex-col items-center shrink-0 ${
@@ -286,6 +337,30 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                   if (question.type === 'after' || question.type === 'both') {
                     sound.playClick();
                     setActiveSlot('after');
+                    openKeypad({
+                      title: 'Số liền sau (+1)',
+                      value: inputAfter,
+                      onDigit: (d) => {
+                        if (inputAfter.length < 3) {
+                          const next = inputAfter + d;
+                          setInputAfter(next);
+                          updateKeypadValue(next);
+                          setStatus('idle');
+                        }
+                      },
+                      onDelete: () => {
+                        const next = inputAfter.slice(0, -1);
+                        setInputAfter(next);
+                        updateKeypadValue(next);
+                        setStatus('idle');
+                      },
+                      onClear: () => {
+                        setInputAfter('');
+                        updateKeypadValue('');
+                        setStatus('idle');
+                      },
+                      onSubmit: handleCheck,
+                    });
                   }
                 }}
                 className={`flex flex-col items-center shrink-0 transition-transform ${

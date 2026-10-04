@@ -4,12 +4,14 @@ import { TachGopQuestion, TachSoCongQuaMuoiQuestion } from '../types/math';
 import { generateTachGopQuestion, generateTachSoCongQuaMuoiQuestion } from '../utils/mathGenerators';
 import { NumberPad } from './NumberPad';
 import { sound } from '../utils/audio';
+import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface TachGopSectionProps {
   onEarnStar: () => void;
 }
 
 export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) => {
+  const { openKeypad, updateKeypadValue, closeKeypad } = useVirtualKeypad();
   // Mode: 'split-add' (Tách số cộng qua 10 - yêu cầu chính của phụ huynh), 'bond-tree' (Sơ đồ cây), 'sandbox' (Khám phá)
   const [activeSubMode, setActiveSubMode] = useState<'split-add' | 'bond-tree' | 'sandbox'>('split-add');
 
@@ -356,9 +358,19 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
 
                 {/* Ô kết quả cuối cùng */}
                 <div
-                  onClick={() => {
+                  onClick={(e) => {
                     sound.playClick();
                     setActiveSlot('finalResult');
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    openKeypad({
+                      title: 'Ô kết quả phép tính',
+                      value: inputFinal,
+                      anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                      onDigit: handleSplitAddPadDigit,
+                      onDelete: handleSplitAddPadDelete,
+                      onClear: handleSplitAddPadClear,
+                      onSubmit: handleCheckSplitAdd,
+                    });
                   }}
                   className={`w-18 h-14 sm:w-20 sm:h-16 rounded-2xl border-3 flex items-center justify-center text-2xl sm:text-3xl font-black transition-all cursor-pointer shadow-sm ${
                     activeSlot === 'finalResult'
@@ -397,9 +409,19 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
                 <div className="w-full flex items-center justify-between px-2">
                   {/* Ô TÁCH 1 */}
                   <div
-                    onClick={() => {
+                    onClick={(e) => {
                       sound.playClick();
                       setActiveSlot('split1');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: `Ô tách 1 (để gộp đủ ${splitAddQ.roundTen})`,
+                        value: inputSplit1,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: handleSplitAddPadDigit,
+                        onDelete: handleSplitAddPadDelete,
+                        onClear: handleSplitAddPadClear,
+                        onSubmit: handleCheckSplitAdd,
+                      });
                     }}
                     className="flex flex-col items-center cursor-pointer group"
                   >
@@ -430,9 +452,19 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
 
                   {/* Ô TÁCH 2 */}
                   <div
-                    onClick={() => {
+                    onClick={(e) => {
                       sound.playClick();
                       setActiveSlot('split2');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: 'Ô tách 2 (phần còn lại)',
+                        value: inputSplit2,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: handleSplitAddPadDigit,
+                        onDelete: handleSplitAddPadDelete,
+                        onClear: handleSplitAddPadClear,
+                        onSubmit: handleCheckSplitAdd,
+                      });
                     }}
                     className="flex flex-col items-center cursor-pointer group"
                   >
@@ -579,9 +611,19 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
               <div className="grid grid-cols-3 gap-1.5 mb-3">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
                     sound.playClick();
                     setActiveSlot('split1');
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    openKeypad({
+                      title: `Ô tách 1 (để gộp đủ ${splitAddQ.roundTen})`,
+                      value: inputSplit1,
+                      anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                      onDigit: handleSplitAddPadDigit,
+                      onDelete: handleSplitAddPadDelete,
+                      onClear: handleSplitAddPadClear,
+                      onSubmit: handleCheckSplitAdd,
+                    });
                   }}
                   className={`py-2 px-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer text-center ${
                     activeSlot === 'split1'
@@ -594,9 +636,19 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
 
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
                     sound.playClick();
                     setActiveSlot('split2');
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    openKeypad({
+                      title: 'Ô tách 2 (phần còn lại)',
+                      value: inputSplit2,
+                      anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                      onDigit: handleSplitAddPadDigit,
+                      onDelete: handleSplitAddPadDelete,
+                      onClear: handleSplitAddPadClear,
+                      onSubmit: handleCheckSplitAdd,
+                    });
                   }}
                   className={`py-2 px-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer text-center ${
                     activeSlot === 'split2'
@@ -609,9 +661,19 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
 
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
                     sound.playClick();
                     setActiveSlot('finalResult');
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    openKeypad({
+                      title: 'Ô kết quả phép tính',
+                      value: inputFinal,
+                      anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                      onDigit: handleSplitAddPadDigit,
+                      onDelete: handleSplitAddPadDelete,
+                      onClear: handleSplitAddPadClear,
+                      onSubmit: handleCheckSplitAdd,
+                    });
                   }}
                   className={`py-2 px-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer text-center ${
                     activeSlot === 'finalResult'
@@ -730,9 +792,33 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
                 {/* Vòng tròn tổng */}
                 <div className="flex flex-col items-center">
                   <div
+                    onClick={(e) => {
+                      if (treeQuestion.missingField === 'total') {
+                        sound.playClick();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        openKeypad({
+                          title: 'Điền số tổng (?)',
+                          value: treeInput,
+                          anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                          onDigit: (d) => {
+                            if (treeInput.length < 3) setTreeInput((p) => p + d);
+                            setTreeStatus('idle');
+                          },
+                          onDelete: () => {
+                            setTreeInput((p) => p.slice(0, -1));
+                            setTreeStatus('idle');
+                          },
+                          onClear: () => {
+                            setTreeInput('');
+                            setTreeStatus('idle');
+                          },
+                          onSubmit: handleCheckTree,
+                        });
+                      }
+                    }}
                     className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center font-extrabold text-2xl sm:text-3xl border-4 transition-all shadow-md ${
                       treeQuestion.missingField === 'total'
-                        ? 'bg-amber-100 border-amber-500 text-amber-900 animate-pulse-glow'
+                        ? 'bg-amber-100 border-amber-500 text-amber-900 animate-pulse-glow cursor-pointer'
                         : 'bg-amber-400 border-amber-600 text-amber-950'
                     }`}
                   >
@@ -747,9 +833,33 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
                 <div className="w-full flex items-center justify-around px-4">
                   <div className="flex flex-col items-center">
                     <div
+                      onClick={(e) => {
+                        if (treeQuestion.missingField === 'partA') {
+                          sound.playClick();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          openKeypad({
+                            title: 'Điền số phần 1 (?)',
+                            value: treeInput,
+                            anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                            onDigit: (d) => {
+                              if (treeInput.length < 3) setTreeInput((p) => p + d);
+                              setTreeStatus('idle');
+                            },
+                            onDelete: () => {
+                              setTreeInput((p) => p.slice(0, -1));
+                              setTreeStatus('idle');
+                            },
+                            onClear: () => {
+                              setTreeInput('');
+                              setTreeStatus('idle');
+                            },
+                            onSubmit: handleCheckTree,
+                          });
+                        }
+                      }}
                       className={`w-18 h-18 sm:w-22 sm:h-22 rounded-full flex items-center justify-center font-extrabold text-xl sm:text-2xl border-4 transition-all shadow-md ${
                         treeQuestion.missingField === 'partA'
-                          ? 'bg-emerald-100 border-emerald-500 text-emerald-950 animate-pulse-glow'
+                          ? 'bg-emerald-100 border-emerald-500 text-emerald-950 animate-pulse-glow cursor-pointer'
                           : 'bg-emerald-400 border-emerald-600 text-emerald-950'
                       }`}
                     >
@@ -762,9 +872,33 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
 
                   <div className="flex flex-col items-center">
                     <div
+                      onClick={(e) => {
+                        if (treeQuestion.missingField === 'partB') {
+                          sound.playClick();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          openKeypad({
+                            title: 'Điền số phần 2 (?)',
+                            value: treeInput,
+                            anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                            onDigit: (d) => {
+                              if (treeInput.length < 3) setTreeInput((p) => p + d);
+                              setTreeStatus('idle');
+                            },
+                            onDelete: () => {
+                              setTreeInput((p) => p.slice(0, -1));
+                              setTreeStatus('idle');
+                            },
+                            onClear: () => {
+                              setTreeInput('');
+                              setTreeStatus('idle');
+                            },
+                            onSubmit: handleCheckTree,
+                          });
+                        }
+                      }}
                       className={`w-18 h-18 sm:w-22 sm:h-22 rounded-full flex items-center justify-center font-extrabold text-xl sm:text-2xl border-4 transition-all shadow-md ${
                         treeQuestion.missingField === 'partB'
-                          ? 'bg-blue-100 border-blue-500 text-blue-950 animate-pulse-glow'
+                          ? 'bg-blue-100 border-blue-500 text-blue-950 animate-pulse-glow cursor-pointer'
                           : 'bg-blue-400 border-blue-600 text-blue-950'
                       }`}
                     >

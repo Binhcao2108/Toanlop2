@@ -13,6 +13,8 @@ import { INITIAL_BADGES } from './utils/mathGenerators';
 import { sound } from './utils/audio';
 import confetti from 'canvas-confetti';
 import { Award, BookOpen, Calculator, Sparkles, Train, Scale, Layers } from 'lucide-react';
+import { VirtualKeypadProvider } from './context/VirtualKeypadContext';
+import { FloatingVirtualKeypad } from './components/FloatingVirtualKeypad';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<TopicTab>('tach-gop');
@@ -115,18 +117,19 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-amber-50/20 to-orange-50/30 text-slate-800 flex flex-col font-sans">
-      {/* Top Bar Header */}
-      <Header
-        currentTab={currentTab}
-        onSelectTab={setCurrentTab}
-        stars={stars}
-        soundEnabled={soundEnabled}
-        onToggleSound={handleToggleSound}
-        onOpenBadges={() => setIsBadgesOpen(true)}
-        onOpenPrint={() => setIsPrintOpen(true)}
-        onOpenQuiz={() => setIsQuizOpen(true)}
-      />
+    <VirtualKeypadProvider>
+      <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-amber-50/20 to-orange-50/30 text-slate-800 flex flex-col font-sans">
+        {/* Top Bar Header */}
+        <Header
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          stars={stars}
+          soundEnabled={soundEnabled}
+          onToggleSound={handleToggleSound}
+          onOpenBadges={() => setIsBadgesOpen(true)}
+          onOpenPrint={() => setIsPrintOpen(true)}
+          onOpenQuiz={() => setIsQuizOpen(true)}
+        />
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
@@ -279,6 +282,10 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Virtual Keypad when clicking ? */}
+      <FloatingVirtualKeypad />
     </div>
+  </VirtualKeypadProvider>
   );
 }

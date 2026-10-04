@@ -4,12 +4,14 @@ import { WordProblemQuestion } from '../types/math';
 import { generateWordProblemQuestion } from '../utils/mathGenerators';
 import { NumberPad } from './NumberPad';
 import { sound } from '../utils/audio';
+import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface ToanDoSectionProps {
   onEarnStar: () => void;
 }
 
 export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
+  const { openKeypad, updateKeypadValue, closeKeypad } = useVirtualKeypad();
   // Difficulty: 'basic' (Đề cơ bản: kẹo, thước kẻ, bút...) vs 'advanced' (Đề nâng cao: có nhớ)
   const [difficulty, setDifficulty] = useState<'basic' | 'advanced'>('basic');
   const [category, setCategory] = useState<'all' | 'cho-con-lai' | 'so-sanh-hon' | 'them-tat-ca' | 'nhieu-hon' | 'it-hon'>('all');
@@ -24,15 +26,42 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [showHint, setShowHint] = useState<boolean>(false);
   const [showDiagram, setShowDiagram] = useState<boolean>(true);
+  const [showScratchpad, setShowScratchpad] = useState<boolean>(false);
+  const [scratchTens, setScratchTens] = useState<string>('');
+  const [scratchUnit, setScratchUnit] = useState<string>('');
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = React.useRef<boolean>(false);
   const [streak, setStreak] = useState<number>(0);
+
+  const handleClearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const handleApplyScratchToResult = () => {
+    sound.playClick();
+    const combined = `${scratchTens}${scratchUnit}`.trim();
+    if (combined) {
+      setUserResultInput(combined);
+      updateKeypadValue(combined);
+      setStatus('idle');
+    }
+  };
 
   const nextQuestion = (diff = difficulty, cat = category) => {
     const q = generateWordProblemQuestion({ difficulty: diff, category: cat });
     setQuestion(q);
     setUserResultInput('');
     setChosenOp(null);
+    setScratchTens('');
+    setScratchUnit('');
+    handleClearCanvas();
     setStatus('idle');
     setShowHint(false);
+    closeKeypad();
   };
 
   const handleDifficultyChange = (newDiff: 'basic' | 'advanced') => {
@@ -336,6 +365,161 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
             </div>
           )}
 
+          {/* BẬT / ẨN BẢNG NHÁP XẾP 2 SỐ (YÊU CẦU CỦA PHỤ HUYNH) */}
+          <div className="bg-amber-50/70 rounded-2xl border border-amber-200 p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">📝</span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-amber-950">
+                    Bảng nháp xếp cột dọc cho bé
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-500">
+                    Xếp sẵn 2 số theo cột dọc để bé dễ nháp tính nếu cần
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setShowScratchpad(!showScratchpad);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1.5 ${
+                  showScratchpad
+                    ? 'bg-amber-500 text-white border border-amber-600'
+                    : 'bg-white text-slate-700 border border-slate-300 hover:bg-amber-100'
+                }`}
+              >
+                <span>{showScratchpad ? 'Ẩn bảng nháp' : 'Mở bảng nháp'}</span>
+              </button>
+            </div>
+
+            {showScratchpad && (
+              <div className="pt-2 border-t border-amber-200/70 space-y-3 animate-pop">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                  {/* Phía trái: Khung đặt tính cột dọc 2 số */}
+                  <div className="bg-white p-3.5 rounded-xl border-2 border-amber-300 flex flex-col items-center shadow-xs">
+                    <span className="text-xs font-bold text-amber-900 mb-1.5">
+                      Cột dọc: {question.num1} {question.operation} {question.num2}
+                    </span>
+                    <div className="w-48 bg-amber-50/60 p-2.5 rounded-xl border border-amber-200 text-center font-mono">
+                      {/* Header: Chục | Đơn vị */}
+                      <div className="grid grid-cols-2 text-xs font-bold text-slate-500 border-b border-amber-200 pb-1 mb-1">
+                        <span>Chục</span>
+                        <span>Đơn vị</span>
+                      </div>
+
+                      {/* Số thứ nhất */}
+                      <div className="grid grid-cols-2 text-2xl font-black text-slate-800 py-0.5 border-b border-slate-100">
+                        <span>{Math.floor(question.num1 / 10) || ''}</span>
+                        <span>{question.num1 % 10}</span>
+                      </div>
+
+                      {/* Dấu & Số thứ hai */}
+                      <div className="relative grid grid-cols-2 text-2xl font-black text-slate-800 py-0.5">
+                        <span className="absolute left-1 text-amber-700 text-xl font-sans font-black">
+                          {question.operation}
+                        </span>
+                        <span>{Math.floor(question.num2 / 10) || ''}</span>
+                        <span>{question.num2 % 10}</span>
+                      </div>
+
+                      {/* Đường kẻ ngang */}
+                      <div className="w-full h-1 bg-slate-800 rounded-full my-1.5" />
+
+                      {/* Hai ô kết quả nháp */}
+                      <div className="grid grid-cols-2 gap-1.5 py-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={scratchTens}
+                          placeholder="?"
+                          onChange={(e) => setScratchTens(e.target.value.replace(/\D/g, ''))}
+                          className="h-10 text-center text-xl font-black rounded-lg border-2 border-amber-400 bg-white text-slate-900 outline-none"
+                          title="Nháp chữ số hàng chục"
+                        />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={scratchUnit}
+                          placeholder="?"
+                          onChange={(e) => setScratchUnit(e.target.value.replace(/\D/g, ''))}
+                          className="h-10 text-center text-xl font-black rounded-lg border-2 border-blue-400 bg-white text-slate-900 outline-none"
+                          title="Nháp chữ số hàng đơn vị"
+                        />
+                      </div>
+                    </div>
+
+                    {(scratchTens || scratchUnit) && (
+                      <button
+                        type="button"
+                        onClick={handleApplyScratchToResult}
+                        className="mt-2.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-transform"
+                      >
+                        👉 Đưa số ({scratchTens}{scratchUnit}) vào bài làm
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Phía phải: Bảng vẽ ngón tay (Canvas doodle) */}
+                  <div className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col items-center shadow-xs">
+                    <div className="w-full flex items-center justify-between mb-1.5 text-xs font-bold text-slate-600">
+                      <span>✏️ Vẽ nháp bằng ngón tay:</span>
+                      <button
+                        type="button"
+                        onClick={handleClearCanvas}
+                        className="text-xs text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer"
+                      >
+                        Xóa nét vẽ
+                      </button>
+                    </div>
+                    <canvas
+                      ref={canvasRef}
+                      width={220}
+                      height={130}
+                      onPointerDown={(e) => {
+                        isDrawingRef.current = true;
+                        const canvas = canvasRef.current;
+                        if (!canvas) return;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) return;
+                        const rect = canvas.getBoundingClientRect();
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = 'round';
+                        ctx.strokeStyle = '#2563eb';
+                        ctx.beginPath();
+                        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                      }}
+                      onPointerMove={(e) => {
+                        if (!isDrawingRef.current) return;
+                        const canvas = canvasRef.current;
+                        if (!canvas) return;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) return;
+                        const rect = canvas.getBoundingClientRect();
+                        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                        ctx.stroke();
+                      }}
+                      onPointerUp={() => {
+                        isDrawingRef.current = false;
+                      }}
+                      onPointerLeave={() => {
+                        isDrawingRef.current = false;
+                      }}
+                      className="w-full h-32 bg-amber-50/40 rounded-lg border border-dashed border-amber-300 touch-none cursor-crosshair"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1">
+                      (Dùng ngón tay vẽ tính nháp tự do)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* KHUNG BÀI GIẢI MẪU 3 BƯỚC CHUẨN TIỂU HỌC */}
           <div className="p-4 bg-white rounded-2xl border-2 border-dashed border-amber-300 space-y-4">
             <div className="text-center font-bold text-amber-900 uppercase tracking-wide text-xs">
@@ -396,19 +580,87 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
               <span className="text-2xl font-bold text-slate-400">=</span>
 
               {/* Ô kết quả */}
-              <div
-                className={`min-w-[80px] h-12 rounded-xl border-2 flex items-center justify-center text-2xl font-black transition-all px-2 ${
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={userResultInput}
+                placeholder="?"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 3);
+                  setUserResultInput(val);
+                  updateKeypadValue(val);
+                  setStatus('idle');
+                }}
+                onFocus={(e) => {
+                  sound.playClick();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  openKeypad({
+                    title: 'Kết quả bài toán đố',
+                    value: userResultInput,
+                    anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                    onDigit: (d) => {
+                      if (userResultInput.length < 3) {
+                        const next = userResultInput + d;
+                        setUserResultInput(next);
+                        updateKeypadValue(next);
+                        setStatus('idle');
+                      }
+                    },
+                    onDelete: () => {
+                      const next = userResultInput.slice(0, -1);
+                      setUserResultInput(next);
+                      updateKeypadValue(next);
+                      setStatus('idle');
+                    },
+                    onClear: () => {
+                      setUserResultInput('');
+                      updateKeypadValue('');
+                      setStatus('idle');
+                    },
+                    onSubmit: handleCheck,
+                  });
+                }}
+                onClick={(e) => {
+                  sound.playClick();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  openKeypad({
+                    title: 'Kết quả bài toán đố',
+                    value: userResultInput,
+                    anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                    onDigit: (d) => {
+                      if (userResultInput.length < 3) {
+                        const next = userResultInput + d;
+                        setUserResultInput(next);
+                        updateKeypadValue(next);
+                        setStatus('idle');
+                      }
+                    },
+                    onDelete: () => {
+                      const next = userResultInput.slice(0, -1);
+                      setUserResultInput(next);
+                      updateKeypadValue(next);
+                      setStatus('idle');
+                    },
+                    onClear: () => {
+                      setUserResultInput('');
+                      updateKeypadValue('');
+                      setStatus('idle');
+                    },
+                    onSubmit: handleCheck,
+                  });
+                }}
+                className={`w-24 h-12 rounded-xl border-2 text-center text-2xl font-black transition-all px-2 outline-none cursor-pointer ${
                   status === 'correct'
                     ? 'bg-emerald-100 border-emerald-500 text-emerald-900'
                     : status === 'wrong'
                     ? 'bg-rose-50 border-rose-400 text-rose-800'
                     : userResultInput
                     ? 'bg-white border-amber-500 text-slate-900 shadow-sm'
-                    : 'bg-white border-dashed border-amber-300 text-slate-300 animate-pulse'
+                    : 'bg-white border-dashed border-amber-300 text-slate-300 placeholder:text-slate-300 animate-pulse'
                 }`}
-              >
-                {userResultInput || '?'}
-              </div>
+                title="Bấm vào để mở bàn phím ảo hoặc bàn phím máy"
+              />
 
               <span className="text-xs sm:text-sm font-bold text-slate-600">
                 ({question.unitName})

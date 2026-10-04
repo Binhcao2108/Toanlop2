@@ -5,12 +5,14 @@ import { generateCongTruQuestion, CongTruRange } from '../utils/mathGenerators';
 import { NumberPad } from './NumberPad';
 import { BaseTenVisualizer } from './BaseTenVisualizer';
 import { sound } from '../utils/audio';
+import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface CongTruCoNhoSectionProps {
   onEarnStar: () => void;
 }
 
 export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarnStar }) => {
+  const { openKeypad, updateKeypadValue, closeKeypad } = useVirtualKeypad();
   const [opChoice, setOpChoice] = useState<'+' | '-' | 'both'>('both');
   const [rangeChoice, setRangeChoice] = useState<CongTruRange>('within100');
   
@@ -46,6 +48,7 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
     setStatus('idle');
     setErrorMessage('');
     setShowExplanation(false);
+    closeKeypad();
   };
 
   const handleOpChoiceChange = (newOp: '+' | '-' | 'both') => {
@@ -94,20 +97,30 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
   const handleDigit = (d: string) => {
     if (activeSlot === 'unit') {
       setUnitInput(d);
+      updateKeypadValue(d);
       setActiveSlot('tens');
     } else if (activeSlot === 'tens') {
       setTensInput(d);
+      updateKeypadValue(d);
       setActiveSlot('carry');
     } else {
       setCarryInput(d);
+      updateKeypadValue(d);
     }
     setStatus('idle');
   };
 
   const handleDelete = () => {
-    if (activeSlot === 'unit') setUnitInput('');
-    else if (activeSlot === 'tens') setTensInput('');
-    else setCarryInput('');
+    if (activeSlot === 'unit') {
+      setUnitInput('');
+      updateKeypadValue('');
+    } else if (activeSlot === 'tens') {
+      setTensInput('');
+      updateKeypadValue('');
+    } else {
+      setCarryInput('');
+      updateKeypadValue('');
+    }
     setStatus('idle');
   };
 
@@ -115,6 +128,7 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
     setUnitInput('');
     setTensInput('');
     setCarryInput('');
+    updateKeypadValue('');
     setActiveSlot('unit');
     setStatus('idle');
   };
@@ -269,40 +283,146 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
                 {/* HAI Ô KẾT QUẢ THẲNG TẮP DƯỚI HÀNG CHỤC VÀ ĐƠN VỊ */}
                 <div className="grid grid-cols-2 gap-2 text-center py-1">
                   {/* Ô Chữ số Hàng Chục */}
-                  <div
-                    onClick={() => {
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={tensInput}
+                    placeholder="?"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(-1);
+                      setTensInput(val);
+                      updateKeypadValue(val);
+                      setStatus('idle');
+                    }}
+                    onFocus={(e) => {
                       sound.playClick();
                       setActiveSlot('tens');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: 'Chữ số Hàng Chục',
+                        value: tensInput,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: (d) => {
+                          setTensInput(d);
+                          updateKeypadValue(d);
+                          setActiveSlot('carry');
+                        },
+                        onDelete: () => {
+                          setTensInput('');
+                          updateKeypadValue('');
+                        },
+                        onClear: () => {
+                          setTensInput('');
+                          updateKeypadValue('');
+                        },
+                        onSubmit: handleCheck,
+                      });
                     }}
-                    className={`h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-black font-mono transition-all cursor-pointer ${
+                    onClick={(e) => {
+                      sound.playClick();
+                      setActiveSlot('tens');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: 'Chữ số Hàng Chục',
+                        value: tensInput,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: (d) => {
+                          setTensInput(d);
+                          updateKeypadValue(d);
+                          setActiveSlot('carry');
+                        },
+                        onDelete: () => {
+                          setTensInput('');
+                          updateKeypadValue('');
+                        },
+                        onClear: () => {
+                          setTensInput('');
+                          updateKeypadValue('');
+                        },
+                        onSubmit: handleCheck,
+                      });
+                    }}
+                    className={`h-14 w-full rounded-xl border-2 text-center text-3xl font-black font-mono transition-all cursor-pointer outline-none ${
                       activeSlot === 'tens'
                         ? 'border-amber-500 bg-amber-100 text-amber-950 scale-105 shadow-sm animate-pulse-glow'
                         : tensInput
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                        : 'border-dashed border-amber-300 bg-amber-50/50 text-slate-300'
+                        : 'border-dashed border-amber-300 bg-amber-50/50 text-slate-300 placeholder:text-slate-300'
                     }`}
                     title="Bấm để nhập chữ số hàng chục"
-                  >
-                    {tensInput || '?'}
-                  </div>
+                  />
 
                   {/* Ô Chữ số Hàng Đơn Vị */}
-                  <div
-                    onClick={() => {
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={unitInput}
+                    placeholder="?"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(-1);
+                      setUnitInput(val);
+                      updateKeypadValue(val);
+                      setStatus('idle');
+                    }}
+                    onFocus={(e) => {
                       sound.playClick();
                       setActiveSlot('unit');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: 'Chữ số Hàng Đơn Vị',
+                        value: unitInput,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: (d) => {
+                          setUnitInput(d);
+                          updateKeypadValue(d);
+                          setActiveSlot('tens');
+                        },
+                        onDelete: () => {
+                          setUnitInput('');
+                          updateKeypadValue('');
+                        },
+                        onClear: () => {
+                          setUnitInput('');
+                          updateKeypadValue('');
+                        },
+                        onSubmit: handleCheck,
+                      });
                     }}
-                    className={`h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-black font-mono transition-all cursor-pointer ${
+                    onClick={(e) => {
+                      sound.playClick();
+                      setActiveSlot('unit');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: 'Chữ số Hàng Đơn Vị',
+                        value: unitInput,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: (d) => {
+                          setUnitInput(d);
+                          updateKeypadValue(d);
+                          setActiveSlot('tens');
+                        },
+                        onDelete: () => {
+                          setUnitInput('');
+                          updateKeypadValue('');
+                        },
+                        onClear: () => {
+                          setUnitInput('');
+                          updateKeypadValue('');
+                        },
+                        onSubmit: handleCheck,
+                      });
+                    }}
+                    className={`h-14 w-full rounded-xl border-2 text-center text-3xl font-black font-mono transition-all cursor-pointer outline-none ${
                       activeSlot === 'unit'
                         ? 'border-blue-500 bg-blue-100 text-blue-950 scale-105 shadow-sm animate-pulse-glow'
                         : unitInput
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                        : 'border-dashed border-blue-300 bg-blue-50/50 text-slate-300'
+                        : 'border-dashed border-blue-300 bg-blue-50/50 text-slate-300 placeholder:text-slate-300'
                     }`}
                     title="Bấm để nhập chữ số hàng đơn vị"
-                  >
-                    {unitInput || '?'}
-                  </div>
+                  />
                 </div>
 
                 <div className="text-[10px] text-center text-slate-400 mt-1 font-semibold">
@@ -312,11 +432,7 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
 
               {/* PHÍA BÊN PHẢI PHÉP TÍNH: Ô ĐIỀN NHỚ 1 (YÊU CẦU CỦA BẠN) */}
               <div
-                onClick={() => {
-                  sound.playClick();
-                  setActiveSlot('carry');
-                }}
-                className={`w-36 bg-white p-3.5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm flex flex-col items-center justify-between min-h-[180px] ${
+                className={`w-36 bg-white p-3.5 rounded-2xl border-2 transition-all shadow-sm flex flex-col items-center justify-between min-h-[180px] ${
                   activeSlot === 'carry'
                     ? 'border-rose-500 ring-2 ring-rose-400 bg-rose-50/30 scale-105 animate-pulse-glow'
                     : carryInput
@@ -336,15 +452,70 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
 
                 {/* Ô vuông to điền số nhớ 1 */}
                 <div className="my-2">
-                  <div
-                    className={`w-14 h-14 rounded-2xl border-3 flex items-center justify-center text-3xl font-black transition-all ${
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={carryInput}
+                    placeholder="?"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(-1);
+                      setCarryInput(val);
+                      updateKeypadValue(val);
+                      setStatus('idle');
+                    }}
+                    onFocus={(e) => {
+                      sound.playClick();
+                      setActiveSlot('carry');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: isAddition ? 'Ô Ghi Nhớ 1 (phía bên phải)' : 'Ô Mượn/Nhớ 1 (phía bên phải)',
+                        value: carryInput,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: (d) => {
+                          setCarryInput(d);
+                          updateKeypadValue(d);
+                        },
+                        onDelete: () => {
+                          setCarryInput('');
+                          updateKeypadValue('');
+                        },
+                        onClear: () => {
+                          setCarryInput('');
+                          updateKeypadValue('');
+                        },
+                        onSubmit: handleCheck,
+                      });
+                    }}
+                    onClick={(e) => {
+                      sound.playClick();
+                      setActiveSlot('carry');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      openKeypad({
+                        title: isAddition ? 'Ô Ghi Nhớ 1 (phía bên phải)' : 'Ô Mượn/Nhớ 1 (phía bên phải)',
+                        value: carryInput,
+                        anchorRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                        onDigit: (d) => {
+                          setCarryInput(d);
+                          updateKeypadValue(d);
+                        },
+                        onDelete: () => {
+                          setCarryInput('');
+                          updateKeypadValue('');
+                        },
+                        onClear: () => {
+                          setCarryInput('');
+                          updateKeypadValue('');
+                        },
+                        onSubmit: handleCheck,
+                      });
+                    }}
+                    className={`w-14 h-14 rounded-2xl border-3 text-center text-3xl font-black transition-all outline-none cursor-pointer ${
                       carryInput
                         ? 'bg-rose-500 border-rose-600 text-white shadow-md'
-                        : 'bg-white border-dashed border-rose-400 text-rose-300'
+                        : 'bg-white border-dashed border-rose-400 text-rose-300 placeholder:text-rose-300'
                     }`}
-                  >
-                    {carryInput || '?'}
-                  </div>
+                  />
                   <span className="text-[11px] font-bold text-rose-800 text-center block mt-1">
                     Nhớ 1
                   </span>
