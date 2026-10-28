@@ -5,6 +5,8 @@ import { CongTruCoNhoSection } from './components/CongTruCoNhoSection';
 import { LienTruocLienSauSection } from './components/LienTruocLienSauSection';
 import { SoSanhDaySoSection } from './components/SoSanhDaySoSection';
 import { ToanDoSection } from './components/ToanDoSection';
+import { OnTapSection } from './components/OnTapSection';
+import { KiemTraSection } from './components/KiemTraSection';
 import { QuizModal } from './components/QuizModal';
 import { BadgesModal } from './components/BadgesModal';
 import { PrintWorksheetModal } from './components/PrintWorksheetModal';
@@ -12,7 +14,7 @@ import { TopicTab, Badge } from './types/math';
 import { INITIAL_BADGES } from './utils/mathGenerators';
 import { sound } from './utils/audio';
 import confetti from 'canvas-confetti';
-import { Award, BookOpen, Calculator, Sparkles, Train, Scale, Layers } from 'lucide-react';
+import { BookOpen, Calculator, Sparkles, Train, Scale, Layers, GraduationCap, ClipboardCheck } from 'lucide-react';
 import { VirtualKeypadProvider } from './context/VirtualKeypadContext';
 import { FloatingVirtualKeypad } from './components/FloatingVirtualKeypad';
 
@@ -51,7 +53,6 @@ export default function App() {
         // ignore
       }
 
-      // Check if newly unlocked a badge
       badges.forEach((b) => {
         if (!b.unlocked && newTotal >= b.requiredStars) {
           b.unlocked = true;
@@ -114,11 +115,25 @@ export default function App() {
       icon: <BookOpen className="w-5 h-5 text-indigo-700" />,
       color: 'bg-indigo-100/70 border-indigo-300 text-indigo-900',
     },
+    {
+      id: 'on-tap',
+      title: 'Ôn Tập',
+      sub: 'Đề trắc nghiệm 10 câu tự sinh đủ 7 dạng toán',
+      icon: <ClipboardCheck className="w-5 h-5 text-teal-700" />,
+      color: 'bg-teal-100/70 border-teal-300 text-teal-900',
+    },
+    {
+      id: 'kiem-tra',
+      title: 'Kiểm Tra Tổng Hợp',
+      sub: 'Đề thi 10 - 15 câu tổng hợp đầy đủ 5 phần',
+      icon: <GraduationCap className="w-5 h-5 text-amber-700" />,
+      color: 'bg-amber-100/70 border-amber-300 text-amber-900',
+    },
   ];
 
   return (
     <VirtualKeypadProvider>
-      <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-amber-50/20 to-orange-50/30 text-slate-800 flex flex-col font-sans">
+      <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-amber-50/60 via-amber-50/20 to-orange-50/30 text-slate-800 flex flex-col font-sans">
         {/* Top Bar Header */}
         <Header
           currentTab={currentTab}
@@ -131,161 +146,171 @@ export default function App() {
           onOpenQuiz={() => setIsQuizOpen(true)}
         />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
-        {/* Welcome & Topic Hub Cards */}
-        <section className="bg-white rounded-3xl border border-amber-200/80 p-4 sm:p-6 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">👋</span>
-                <h1 className="text-xl sm:text-2xl font-black text-amber-950 tracking-tight">
-                  Chào bé yêu! Cùng làm toán lớp 2 thật giỏi nhé!
-                </h1>
+        {/* Main Container */}
+        <main className="flex-1 max-w-6xl w-full mx-auto px-2.5 sm:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6">
+          {/* Welcome & Topic Hub Cards: Hidden on mobile so exercise appears immediately in the first viewport */}
+          <section className="hidden lg:block bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-6 shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xl">👋</span>
+                  <h1 className="text-xl sm:text-2xl font-black text-amber-950 tracking-tight">
+                    Chào bé yêu! Cùng làm toán lớp 2 thật giỏi nhé!
+                  </h1>
+                </div>
+                <p className="text-sm text-slate-600">
+                  Lựa chọn một chủ đề bên dưới để luyện tập với hình ảnh trực quan sinh động:
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-slate-600">
-                Lựa chọn một chủ đề bên dưới để luyện tập với hình ảnh trực quan sinh động:
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  setIsQuizOpen(true);
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-transform"
-              >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Thử Thách 10 Câu</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 5 Topic Select Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
-            {topicCards.map((card) => {
-              const isCurrent = currentTab === card.id;
-              return (
+              <div className="flex items-center gap-2">
                 <button
-                  key={card.id}
                   type="button"
                   onClick={() => {
                     sound.playClick();
-                    setCurrentTab(card.id);
+                    setIsQuizOpen(true);
                   }}
-                  className={`p-3 sm:p-4 rounded-2xl border text-left transition-all cursor-pointer relative group flex flex-col justify-between ${
-                    isCurrent
-                      ? 'bg-amber-400/20 border-amber-500 shadow-md ring-2 ring-amber-400'
-                      : 'bg-white hover:bg-amber-50/50 border-slate-200 hover:border-amber-300'
-                  }`}
+                  className="min-h-[44px] px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 active:scale-95 text-white font-bold text-sm rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-transform"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`p-2 rounded-xl ${card.color} shadow-xs`}>
-                      {card.icon}
-                    </div>
-                    {isCurrent && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
-                    )}
-                  </div>
-                  <div>
-                    <h2 className="font-extrabold text-sm sm:text-base text-slate-900 group-hover:text-amber-900 transition-colors">
-                      {card.title}
-                    </h2>
-                    <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
-                      {card.sub}
-                    </p>
-                  </div>
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>Thử Thách 10 Câu</span>
                 </button>
-              );
-            })}
+              </div>
+            </div>
+
+            {/* Topic Select Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              {topicCards.map((card) => {
+                const isCurrent = currentTab === card.id;
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setCurrentTab(card.id);
+                    }}
+                    className={`min-h-[44px] p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative group flex flex-col justify-between ${
+                      isCurrent
+                        ? 'bg-amber-400/20 border-amber-500 shadow-md ring-2 ring-amber-400'
+                        : 'bg-white hover:bg-amber-50/50 border-slate-200 hover:border-amber-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`p-2 rounded-xl ${card.color} shadow-xs`}>
+                        {card.icon}
+                      </div>
+                      {isCurrent && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="font-extrabold text-sm sm:text-base text-slate-900 group-hover:text-amber-900 transition-colors">
+                        {card.title}
+                      </h2>
+                      <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">
+                        {card.sub}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Dynamic Topic Workspace */}
+          <section>
+            {currentTab === 'tach-gop' && (
+              <TachGopSection onEarnStar={() => handleEarnStar(1)} />
+            )}
+
+            {currentTab === 'cong-tru' && (
+              <CongTruCoNhoSection onEarnStar={() => handleEarnStar(1)} />
+            )}
+
+            {currentTab === 'lien-truoc-sau' && (
+              <LienTruocLienSauSection onEarnStar={() => handleEarnStar(1)} />
+            )}
+
+            {currentTab === 'so-sanh' && (
+              <SoSanhDaySoSection onEarnStar={() => handleEarnStar(1)} />
+            )}
+
+            {currentTab === 'toan-do' && (
+              <ToanDoSection onEarnStar={() => handleEarnStar(1)} />
+            )}
+
+            {currentTab === 'on-tap' && (
+              <OnTapSection onEarnStar={() => handleEarnStar(1)} />
+            )}
+
+            {currentTab === 'kiem-tra' && (
+              <KiemTraSection onEarnStars={(count) => handleEarnStar(count)} />
+            )}
+          </section>
+        </main>
+
+        {/* Floating Badge Notification */}
+        {unlockedNotification && (
+          <div className="fixed bottom-6 right-6 z-50 bg-white border-2 border-amber-400 rounded-2xl p-4 shadow-xl flex items-center gap-3 animate-pop max-w-sm">
+            <div className="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center text-2xl shadow-sm">
+              {unlockedNotification.icon}
+            </div>
+            <div>
+              <span className="text-sm font-bold text-amber-700 uppercase tracking-wide">
+                🎉 Mở khóa huy hiệu mới!
+              </span>
+              <h4 className="font-black text-base text-slate-900">
+                {unlockedNotification.title}
+              </h4>
+              <p className="text-sm text-slate-600">
+                {unlockedNotification.desc}
+              </p>
+            </div>
           </div>
-        </section>
+        )}
 
-        {/* Dynamic Topic Workspace */}
-        <section>
-          {currentTab === 'tach-gop' && (
-            <TachGopSection onEarnStar={() => handleEarnStar(1)} />
-          )}
+        {/* Modals */}
+        <QuizModal
+          isOpen={isQuizOpen}
+          onClose={() => setIsQuizOpen(false)}
+          onEarnStars={handleEarnStar}
+        />
 
-          {currentTab === 'cong-tru' && (
-            <CongTruCoNhoSection onEarnStar={() => handleEarnStar(1)} />
-          )}
+        <BadgesModal
+          isOpen={isBadgesOpen}
+          onClose={() => setIsBadgesOpen(false)}
+          stars={stars}
+          badges={badges}
+        />
 
-          {currentTab === 'lien-truoc-sau' && (
-            <LienTruocLienSauSection onEarnStar={() => handleEarnStar(1)} />
-          )}
+        <PrintWorksheetModal
+          isOpen={isPrintOpen}
+          onClose={() => setIsPrintOpen(false)}
+        />
 
-          {currentTab === 'so-sanh' && (
-            <SoSanhDaySoSection onEarnStar={() => handleEarnStar(1)} />
-          )}
-
-          {currentTab === 'toan-do' && (
-            <ToanDoSection onEarnStar={() => handleEarnStar(1)} />
-          )}
-        </section>
-      </main>
-
-      {/* Floating Badge Notification */}
-      {unlockedNotification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-white border-2 border-amber-400 rounded-2xl p-4 shadow-xl flex items-center gap-3 animate-pop max-w-sm">
-          <div className="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center text-2xl shadow-sm">
-            {unlockedNotification.icon}
+        {/* Footer */}
+        <footer className="no-print mt-10 border-t border-amber-200/80 bg-white/70 py-4 px-4 text-center text-sm text-slate-600">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>Bé Học Toán Lớp 2 · Giúp con vững bước tư duy toán học</span>
+            <div className="flex items-center gap-3">
+              <span>
+                Bé đã đạt được <strong className="text-amber-700 font-bold">{stars} ★</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsPrintOpen(true)}
+                className="min-h-[44px] px-3 py-1.5 text-amber-800 font-bold hover:underline cursor-pointer"
+              >
+                In phiếu bài tập A4
+              </button>
+            </div>
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
-              🎉 Mở khóa huy hiệu mới!
-            </span>
-            <h4 className="font-black text-sm text-slate-900">
-              {unlockedNotification.title}
-            </h4>
-            <p className="text-xs text-slate-500">
-              {unlockedNotification.desc}
-            </p>
-          </div>
-        </div>
-      )}
+        </footer>
 
-      {/* Modals */}
-      <QuizModal
-        isOpen={isQuizOpen}
-        onClose={() => setIsQuizOpen(false)}
-        onEarnStars={handleEarnStar}
-      />
-
-      <BadgesModal
-        isOpen={isBadgesOpen}
-        onClose={() => setIsBadgesOpen(false)}
-        stars={stars}
-        badges={badges}
-      />
-
-      <PrintWorksheetModal
-        isOpen={isPrintOpen}
-        onClose={() => setIsPrintOpen(false)}
-      />
-
-      {/* Footer */}
-      <footer className="no-print mt-12 border-t border-amber-200/80 bg-white/70 py-4 px-4 text-center text-xs text-slate-500">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Toán Lớp 2 Vui Học · Giúp con vững bước tư duy toán học</span>
-          <div className="flex items-center gap-3">
-            <span>Bé đã đạt được <strong className="text-amber-700 font-bold">{stars} ★</strong></span>
-            <button
-              type="button"
-              onClick={() => setIsPrintOpen(true)}
-              className="text-amber-800 font-semibold hover:underline cursor-pointer"
-            >
-              In phiếu bài tập A4
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {/* Floating Virtual Keypad when clicking ? */}
-      <FloatingVirtualKeypad />
-    </div>
-  </VirtualKeypadProvider>
+        {/* Fixed Bottom Virtual Keypad */}
+        <FloatingVirtualKeypad />
+      </div>
+    </VirtualKeypadProvider>
   );
 }

@@ -2,7 +2,32 @@
  * Type definitions for Grade 2 Math Learning App
  */
 
-export type TopicTab = 'tach-gop' | 'cong-tru' | 'lien-truoc-sau' | 'so-sanh' | 'toan-do';
+export type TopicTab = 'on-tap' | 'tach-gop' | 'cong-tru' | 'lien-truoc-sau' | 'so-sanh' | 'toan-do' | 'kiem-tra';
+
+export type OnTapCategory =
+  | 'tru-qua-10'
+  | 'ket-qua-phep-tinh'
+  | 'so-sanh-phep-tinh'
+  | 'tinh-chuoi'
+  | 'dien-so'
+  | 'toan-do-tru'
+  | 'bai-toan-chuc';
+
+export interface OnTapOption {
+  label: 'A' | 'B' | 'C' | 'D';
+  value: string;
+}
+
+export interface OnTapQuestion {
+  id: string;
+  category: OnTapCategory;
+  categoryTitle: string;
+  prompt: string;
+  options: OnTapOption[];
+  correctLabel: 'A' | 'B' | 'C' | 'D';
+  correctValue: string;
+  explanation: string;
+}
 
 export interface TachGopQuestion {
   id: string;

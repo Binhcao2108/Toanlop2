@@ -60,32 +60,32 @@ export const PrintWorksheetModal: React.FC<PrintWorksheetModalProps> = ({ isOpen
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-3xl w-full my-auto overflow-hidden flex flex-col max-h-[95vh]">
         {/* Modal Controls (Hidden in print) */}
-        <div className="no-print bg-slate-800 text-white px-5 py-3.5 flex items-center justify-between">
+        <div className="no-print bg-slate-800 text-white px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Printer className="w-5 h-5 text-amber-400" />
-            <span className="font-bold text-base">Phiếu Bài Tập Toán Lớp 2 (Khổ A4)</span>
+            <span className="font-bold text-sm sm:text-base">Phiếu Bài Tập Toán Lớp 2 (Khổ A4)</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleRegenerate}
-              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-4 h-4" />
               <span>Đổi Đề Mới</span>
             </button>
             <button
               type="button"
               onClick={handlePrint}
-              className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="min-h-[44px] px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-sm flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-4 h-4" />
               <span>In Ngay</span>
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-full hover:bg-slate-700 text-slate-300 ml-2 cursor-pointer"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-300 ml-1 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -100,12 +100,12 @@ export const PrintWorksheetModal: React.FC<PrintWorksheetModalProps> = ({ isOpen
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">
                 PHIẾU ÔN TẬP TOÁN LỚP 2
               </h2>
-              <p className="text-xs italic text-slate-600">
+              <p className="text-sm italic text-slate-600">
                 (Tách số làm tròn 10 để cộng · Đặt tính có nhớ trong phạm vi 100 · Liền trước liền sau · So sánh số)
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-4 text-xs sm:text-sm font-medium">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-sm font-medium">
               <div>Họ và tên học sinh: ....................................................</div>
               <div>Lớp: 2.....  Trường: .............................................</div>
               <div>Ngày tháng: ...... / ...... / 202...</div>
@@ -122,7 +122,7 @@ export const PrintWorksheetModal: React.FC<PrintWorksheetModalProps> = ({ isOpen
               {splitAddList.map((sq, idx) => (
                 <div
                   key={sq.id}
-                  className="p-3 border border-slate-300 rounded-xl space-y-2 text-xs sm:text-sm"
+                  className="p-3 border border-slate-300 rounded-xl space-y-2 text-sm"
                 >
                   <div className="font-bold text-slate-700">
                     Câu 1.{idx + 1}: Tính {sq.num1} + {sq.num2} = ......
@@ -154,7 +154,7 @@ export const PrintWorksheetModal: React.FC<PrintWorksheetModalProps> = ({ isOpen
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center font-mono">
               {congTruList.map((ct, idx) => (
                 <div key={ct.id} className="p-3 border border-slate-300 rounded-xl">
-                  <div className="text-[11px] font-bold font-sans text-slate-600 mb-2">
+                  <div className="text-sm font-bold font-sans text-slate-600 mb-2">
                     Câu 2.{idx + 1} ({ct.operation === '+' ? 'Cộng có nhớ' : 'Trừ có nhớ'})
                   </div>
                   <div className="w-20 mx-auto text-xl font-bold leading-tight">

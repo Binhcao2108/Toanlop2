@@ -1,4 +1,13 @@
-import { TachGopQuestion, TachSoCongQuaMuoiQuestion, CongTruQuestion, LienTruocSauQuestion, SoSanhQuestion, Badge } from '../types/math';
+import {
+  TachGopQuestion,
+  TachSoCongQuaMuoiQuestion,
+  CongTruQuestion,
+  LienTruocSauQuestion,
+  SoSanhQuestion,
+  Badge,
+  OnTapQuestion,
+  OnTapOption,
+} from '../types/math';
 
 function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -820,3 +829,439 @@ export const INITIAL_BADGES: Badge[] = [
     requiredStars: 60,
   },
 ];
+
+// ============================================================================
+// BƯỚC 2: SINH ĐỀ TRẮC NGHIỆM "ÔN TẬP" (10 CÂU NGẪU NHIÊN ĐỦ 7 DẠNG TOÁN LỚP 2)
+// ============================================================================
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function buildOptionsFromValues(
+  correctValue: string,
+  distractors: string[]
+): { options: OnTapOption[]; correctLabel: 'A' | 'B' | 'C' | 'D' } {
+  const uniqueDistractors: string[] = [];
+  for (const d of distractors) {
+    if (d !== correctValue && !uniqueDistractors.includes(d)) {
+      uniqueDistractors.push(d);
+    }
+    if (uniqueDistractors.length === 3) break;
+  }
+  const labels: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+  const allValues = shuffleArray([correctValue, ...uniqueDistractors]);
+  const options: OnTapOption[] = allValues.map((val, idx) => ({
+    label: labels[idx],
+    value: val,
+  }));
+  const found = options.find((o) => o.value === correctValue);
+  return {
+    options,
+    correctLabel: found ? found.label : 'A',
+  };
+}
+
+function buildNumericDistractors(correct: number, minVal = 1, maxVal = 99, suffix = ''): string[] {
+  const candidates = [
+    correct - 1,
+    correct + 1,
+    correct - 2,
+    correct + 2,
+    correct + 10,
+    correct - 10,
+    correct + 3,
+    correct - 3,
+  ].filter((n) => n >= minVal && n <= maxVal && n !== correct);
+
+  const shuffled = shuffleArray(candidates);
+  const chosen: number[] = [];
+  for (const c of shuffled) {
+    if (!chosen.includes(c)) chosen.push(c);
+    if (chosen.length === 3) break;
+  }
+  let fallback = minVal;
+  while (chosen.length < 3) {
+    if (fallback !== correct && !chosen.includes(fallback)) {
+      chosen.push(fallback);
+    }
+    fallback++;
+  }
+  return chosen.map((n) => `${n}${suffix}`);
+}
+
+/**
+ * Dạng 1: Tính kết quả phép trừ qua 10 trong phạm vi 20
+ * Số bị trừ từ 11 đến 18, số trừ từ 2 đến 9, kết quả luôn dương (qua 10)
+ */
+export function generateOnTapTruQua10(): OnTapQuestion {
+  const a = getRandomInt(11, 18);
+  const minB = a - 9; // ensures a - b <= 9 (crosses 10) and >= 2
+  const b = getRandomInt(Math.max(2, minB), 9);
+  const ans = a - b;
+  const step1 = a - 10;
+  const step2 = b - step1;
+
+  // Plausible distractors: off by 1-2 or forgetting borrow / subtracting backwards
+  const wrongBorrow = ans + 10 <= 19 ? ans + 10 : ans + 2;
+  const rawDistractors = [
+    `${ans + 1}`,
+    `${Math.max(1, ans - 1)}`,
+    `${wrongBorrow}`,
+    `${ans + 2}`,
+    `${Math.max(1, ans - 2)}`,
+  ];
+  const { options, correctLabel } = buildOptionsFromValues(`${ans}`, rawDistractors);
+
+  return {
+    id: `ot-tq10-${Date.now()}-${Math.random()}`,
+    category: 'tru-qua-10',
+    categoryTitle: 'Dạng 1: Phép trừ qua 10 trong phạm vi 20',
+    prompt: `Kết quả của phép tính ${a} - ${b} là bao nhiêu?`,
+    options,
+    correctLabel,
+    correctValue: `${ans}`,
+    explanation: `${a} - ${b}: ${a} - ${step1} = 10, 10 - ${step2} = ${ans}.`,
+  };
+}
+
+/**
+ * Dạng 2: "Số X là kết quả của phép tính nào dưới đây?"
+ * 4 phép tính có dạng a - b trong phạm vi 20, chỉ một phép cho kết quả đúng bằng X
+ */
+export function generateOnTapKetQuaPhepTinh(): OnTapQuestion {
+  const x = getRandomInt(4, 9);
+  // Correct expression a - b = x where a in 11..18, b in 2..9
+  const bCorrect = getRandomInt(Math.max(2, 11 - x), Math.min(9, 18 - x));
+  const aCorrect = x + bCorrect;
+  const correctExpr = `${aCorrect} - ${bCorrect}`;
+
+  // Generate 3 distractor expressions a_i - b_i whose results are != x (e.g. x-1, x+1, x+2 or x-2)
+  const targetWrongResults = shuffleArray([x - 1, x + 1, x + 2, x - 2].filter((v) => v >= 2 && v <= 12));
+  const distractorExprs: string[] = [];
+  const detailParts: string[] = [`${correctExpr} = ${x}`];
+
+  for (const wRes of targetWrongResults) {
+    if (distractorExprs.length >= 3) break;
+    const minB = Math.max(2, 11 - wRes);
+    const maxB = Math.min(9, 18 - wRes);
+    if (minB <= maxB) {
+      const bW = getRandomInt(minB, maxB);
+      const aW = wRes + bW;
+      const expr = `${aW} - ${bW}`;
+      if (expr !== correctExpr && !distractorExprs.includes(expr)) {
+        distractorExprs.push(expr);
+        detailParts.push(`${expr} = ${wRes}`);
+      }
+    }
+  }
+
+  // Fallback if needed
+  let fallbackA = 15;
+  let fallbackB = 6;
+  while (distractorExprs.length < 3) {
+    if (fallbackA - fallbackB !== x) {
+      const expr = `${fallbackA} - ${fallbackB}`;
+      if (!distractorExprs.includes(expr)) {
+        distractorExprs.push(expr);
+        detailParts.push(`${expr} = ${fallbackA - fallbackB}`);
+      }
+    }
+    fallbackB = fallbackB < 9 ? fallbackB + 1 : 2;
+    fallbackA = fallbackA < 18 ? fallbackA + 1 : 12;
+  }
+
+  const { options, correctLabel } = buildOptionsFromValues(correctExpr, distractorExprs);
+
+  return {
+    id: `ot-kqpt-${Date.now()}-${Math.random()}`,
+    category: 'ket-qua-phep-tinh',
+    categoryTitle: 'Dạng 2: Tìm phép tính có kết quả cho trước',
+    prompt: `Số ${x} là kết quả của phép tính nào dưới đây?`,
+    options,
+    correctLabel,
+    correctValue: correctExpr,
+    explanation: `Ta có: ${detailParts.join('; ')}. Vậy phép tính có kết quả bằng ${x} là ${correctExpr}.`,
+  };
+}
+
+let lastComparisonIndex = 0;
+
+/**
+ * Dạng 3: So sánh hai phép tính, chọn dấu > hoặc < hoặc =
+ * Đáp án gồm >, <, =, "Không so sánh được". Đảm bảo cả ba kết quả >, <, = đều xuất hiện qua các đề.
+ */
+export function generateOnTapSoSanhPhepTinh(forcedSymbol?: '>' | '<' | '='): OnTapQuestion {
+  const symbols: ('>' | '<' | '=')[] = ['>', '<', '='];
+  const targetSym = forcedSymbol ?? symbols[lastComparisonIndex++ % 3];
+
+  let a1 = getRandomInt(11, 17);
+  let b1 = getRandomInt(Math.max(2, a1 - 9), 9);
+  const res1 = a1 - b1;
+
+  let res2 = res1;
+  if (targetSym === '>') {
+    res2 = Math.max(2, res1 - getRandomInt(1, Math.min(3, res1 - 2)));
+  } else if (targetSym === '<') {
+    res2 = Math.min(12, res1 + getRandomInt(1, 3));
+  }
+
+  let b2 = getRandomInt(Math.max(2, 11 - res2), Math.min(9, 18 - res2));
+  if (b2 === b1 && res2 === res1) {
+    b2 = b2 < 9 ? b2 + 1 : b2 - 1;
+  }
+  const a2 = res2 + b2;
+
+  const actualSym: '>' | '<' | '=' = res1 > res2 ? '>' : res1 < res2 ? '<' : '=';
+  const allChoices = ['>', '<', '=', 'Không so sánh được'];
+  const distractors = allChoices.filter((c) => c !== actualSym);
+  const { options, correctLabel } = buildOptionsFromValues(actualSym, distractors);
+
+  return {
+    id: `ot-sspt-${Date.now()}-${Math.random()}`,
+    category: 'so-sanh-phep-tinh',
+    categoryTitle: 'Dạng 3: So sánh hai phép tính',
+    prompt: `Điền dấu thích hợp vào chỗ chấm: ${a1} - ${b1} ... ${a2} - ${b2}`,
+    options,
+    correctLabel,
+    correctValue: actualSym,
+    explanation: `Ta tính: ${a1} - ${b1} = ${res1} và ${a2} - ${b2} = ${res2}. Vì ${res1} ${actualSym} ${res2} nên điền dấu "${actualSym}".`,
+  };
+}
+
+/**
+ * Dạng 4: Tính chuỗi hai phép tính:
+ * - within20: a - b + c với phạm vi 20 (ví dụ 18 - 9 + 7)
+ * - roundTen: a - b + c với c là số tròn chục (ví dụ 13 - 5 + 30)
+ * Kết quả không âm ở bước giữa.
+ */
+export function generateOnTapTinhChuoi(variant?: 'within20' | 'roundTen'): OnTapQuestion {
+  const chosenVariant = variant ?? (Math.random() < 0.5 ? 'within20' : 'roundTen');
+  const a = getRandomInt(11, 18);
+  const b = getRandomInt(Math.max(2, a - 9), 9);
+  const mid = a - b; // always positive (2..9)
+
+  let c: number;
+  if (chosenVariant === 'within20') {
+    c = getRandomInt(2, Math.max(2, 20 - mid));
+  } else {
+    c = getRandomInt(1, 7) * 10; // 10, 20, 30, 40, 50, 60, 70
+  }
+
+  const ans = mid + c;
+  const distractors = buildNumericDistractors(ans, 1, 99);
+  const { options, correctLabel } = buildOptionsFromValues(`${ans}`, distractors);
+
+  return {
+    id: `ot-tc-${Date.now()}-${Math.random()}`,
+    category: 'tinh-chuoi',
+    categoryTitle: 'Dạng 4: Tính chuỗi hai phép tính',
+    prompt: `Tính giá trị của biểu thức: ${a} - ${b} + ${c} = ?`,
+    options,
+    correctLabel,
+    correctValue: `${ans}`,
+    explanation: `Tính từ trái sang phải: ${a} - ${b} = ${mid}, sau đó lấy ${mid} + ${c} = ${ans}.`,
+  };
+}
+
+/**
+ * Dạng 5: Điền số vào chỗ chấm dạng a - ... = c và ... + b = c, phạm vi 20
+ */
+export function generateOnTapDienSo(variant?: 'sub' | 'add'): OnTapQuestion {
+  const chosenVariant = variant ?? (Math.random() < 0.5 ? 'sub' : 'add');
+
+  if (chosenVariant === 'sub') {
+    // a - ... = c
+    const a = getRandomInt(11, 18);
+    const missing = getRandomInt(Math.max(2, a - 9), 9);
+    const c = a - missing;
+    const distractors = buildNumericDistractors(missing, 1, 19);
+    const { options, correctLabel } = buildOptionsFromValues(`${missing}`, distractors);
+
+    return {
+      id: `ot-ds-sub-${Date.now()}-${Math.random()}`,
+      category: 'dien-so',
+      categoryTitle: 'Dạng 5: Điền số thích hợp vào chỗ chấm',
+      prompt: `Số thích hợp điền vào chỗ chấm trong phép tính ${a} - ... = ${c} là:`,
+      options,
+      correctLabel,
+      correctValue: `${missing}`,
+      explanation: `Vì ${a} - ${c} = ${missing} (kiểm tra lại: ${a} - ${missing} = ${c}), nên số cần điền là ${missing}.`,
+    };
+  } else {
+    // ... + b = c
+    const c = getRandomInt(11, 18);
+    const b = getRandomInt(Math.max(2, c - 9), 9);
+    const missing = c - b;
+    const distractors = buildNumericDistractors(missing, 1, 19);
+    const { options, correctLabel } = buildOptionsFromValues(`${missing}`, distractors);
+
+    return {
+      id: `ot-ds-add-${Date.now()}-${Math.random()}`,
+      category: 'dien-so',
+      categoryTitle: 'Dạng 5: Điền số thích hợp vào chỗ chấm',
+      prompt: `Số thích hợp điền vào chỗ chấm trong phép tính ... + ${b} = ${c} là:`,
+      options,
+      correctLabel,
+      correctValue: `${missing}`,
+      explanation: `Vì ${c} - ${b} = ${missing} (kiểm tra lại: ${missing} + ${b} = ${c}), nên số cần điền là ${missing}.`,
+    };
+  }
+}
+
+/**
+ * Dạng 6: Toán đố một bước, trừ:
+ * "Lúc đầu có A người trên xe, B người xuống xe, còn lại bao nhiêu người?"
+ * "Mẹ mua A cái bánh, biếu bà B cái, còn lại bao nhiêu?"
+ * Đổi ngẫu nhiên đồ vật, tên người, đơn vị (người, cái bánh, quả cam, viên kẹo...). A từ 11 đến 18.
+ */
+export function generateOnTapToanDoTru(templateIdx?: number): OnTapQuestion {
+  const templates = [
+    {
+      unit: 'người',
+      makePrompt: (a: number, b: number) =>
+        `Lúc đầu có ${a} người trên xe buýt, đến trạm có ${b} người xuống xe. Hỏi trên xe còn lại bao nhiêu người?`,
+    },
+    {
+      unit: 'cái bánh',
+      makePrompt: (a: number, b: number) =>
+        `Mẹ mua ${a} cái bánh, mẹ đem biếu bà ${b} cái bánh. Hỏi mẹ còn lại bao nhiêu cái bánh?`,
+    },
+    {
+      unit: 'quả cam',
+      makePrompt: (a: number, b: number) =>
+        `Trong rổ có ${a} quả cam, chị Mai lấy ra ${b} quả cam mời khách. Hỏi trong rổ còn lại bao nhiêu quả cam?`,
+    },
+    {
+      unit: 'viên kẹo',
+      makePrompt: (a: number, b: number) =>
+        `Bé An có ${a} viên kẹo, An chia cho em Bình ${b} viên kẹo. Hỏi An còn lại bao nhiêu viên kẹo?`,
+    },
+    {
+      unit: 'quyển vở',
+      makePrompt: (a: number, b: number) =>
+        `Lan có ${a} quyển vở mới, Lan đã dùng hết ${b} quyển vở. Hỏi Lan còn lại bao nhiêu quyển vở chưa dùng?`,
+    },
+    {
+      unit: 'bông hoa',
+      makePrompt: (a: number, b: number) =>
+        `Bình hoa có ${a} bông hoa, sau đó ${b} bông hoa bị héo được lấy ra. Hỏi trong bình còn lại bao nhiêu bông hoa?`,
+    },
+  ];
+
+  const chosen =
+    templateIdx !== undefined
+      ? templates[templateIdx % templates.length]
+      : templates[getRandomInt(0, templates.length - 1)];
+
+  const a = getRandomInt(11, 18);
+  const b = getRandomInt(Math.max(2, a - 9), 9);
+  const ans = a - b;
+  const step1 = a - 10;
+  const step2 = b - step1;
+
+  const correctStr = `${ans} ${chosen.unit}`;
+  const distractors = buildNumericDistractors(ans, 1, 19, ` ${chosen.unit}`);
+  const { options, correctLabel } = buildOptionsFromValues(correctStr, distractors);
+
+  return {
+    id: `ot-tdt-${Date.now()}-${Math.random()}`,
+    category: 'toan-do-tru',
+    categoryTitle: 'Dạng 6: Toán đố có lời văn (Phép trừ)',
+    prompt: chosen.makePrompt(a, b),
+    options,
+    correctLabel,
+    correctValue: correctStr,
+    explanation: `Phép tính: ${a} - ${b} = ${ans} (${a} - ${step1} = 10, 10 - ${step2} = ${ans}). Đáp số: ${ans} ${chosen.unit}.`,
+  };
+}
+
+/**
+ * Dạng 7: Bài toán về "chục":
+ * "Hộp có N chục cái, cho đi M cái, còn lại bao nhiêu?" với N từ 3 đến 9 và M là số tròn chục nhỏ hơn N chục.
+ */
+export function generateOnTapBaiToanChuc(): OnTapQuestion {
+  const nTens = getRandomInt(3, 9); // N từ 3 đến 9
+  const total = nTens * 10;
+  const mTens = getRandomInt(1, nTens - 1);
+  const m = mTens * 10; // M là số tròn chục nhỏ hơn N chục
+  const ans = total - m;
+
+  const items = [
+    { container: 'Hộp', unit: 'cái bánh' },
+    { container: 'Hộp', unit: 'cái kẹo' },
+    { container: 'Túi', unit: 'viên bi' },
+    { container: 'Rổ', unit: 'quả trứng' },
+    { container: 'Hộp', unit: 'cái' },
+  ];
+  const item = items[getRandomInt(0, items.length - 1)];
+
+  const correctStr = `${ans} ${item.unit}`;
+  const distractorNums = [
+    ans + 10 <= 90 ? ans + 10 : ans - 10,
+    ans - 10 >= 10 ? ans - 10 : ans + 20,
+    nTens - mTens, // lỗi quên đổi chục ra đơn vị (ví dụ lấy N - M/10)
+    ans + 20 <= 90 ? ans + 20 : 10,
+  ].filter((val) => val > 0 && val !== ans);
+
+  const uniqueWrong = Array.from(new Set(distractorNums));
+  while (uniqueWrong.length < 3) {
+    const candidate = getRandomInt(1, 9) * 10;
+    if (candidate !== ans && !uniqueWrong.includes(candidate)) {
+      uniqueWrong.push(candidate);
+    }
+  }
+
+  const distractors = uniqueWrong.slice(0, 3).map((v) => `${v} ${item.unit}`);
+  const { options, correctLabel } = buildOptionsFromValues(correctStr, distractors);
+
+  return {
+    id: `ot-btc-${Date.now()}-${Math.random()}`,
+    category: 'bai-toan-chuc',
+    categoryTitle: 'Dạng 7: Bài toán về "chục"',
+    prompt: `${item.container} có ${nTens} chục ${item.unit}, cho đi ${m} ${item.unit}. Hỏi còn lại bao nhiêu ${item.unit}?`,
+    options,
+    correctLabel,
+    correctValue: correctStr,
+    explanation: `Đổi ${nTens} chục = ${total}. Thực hiện phép trừ: ${total} - ${m} = ${ans} (${item.unit}).`,
+  };
+}
+
+/**
+ * Sinh trọn bộ 10 câu trắc nghiệm Ôn Tập Toán Lớp 2
+ * Đảm bảo mỗi đề có đủ cả 7 dạng và đầy đủ các biến thể, số liệu ngẫu nhiên.
+ */
+export function generateOnTapQuiz(): OnTapQuestion[] {
+  const symbols: ('>' | '<' | '=')[] = shuffleArray(['>', '<', '=']);
+
+  const questions: OnTapQuestion[] = [
+    // 1. Phép trừ qua 10 trong phạm vi 20
+    generateOnTapTruQua10(),
+    // 2. Số X là kết quả của phép tính nào dưới đây?
+    generateOnTapKetQuaPhepTinh(),
+    // 3. So sánh hai phép tính (đảm bảo xuất hiện các dấu >, <, =)
+    generateOnTapSoSanhPhepTinh(symbols[0]),
+    // 4a. Tính chuỗi hai phép tính phạm vi 20 (a - b + c)
+    generateOnTapTinhChuoi('within20'),
+    // 4b. Tính chuỗi hai phép tính cộng số tròn chục (a - b + c với c tròn chục)
+    generateOnTapTinhChuoi('roundTen'),
+    // 5a. Điền số vào chỗ chấm dạng a - ... = c
+    generateOnTapDienSo('sub'),
+    // 5b. Điền số vào chỗ chấm dạng ... + b = c
+    generateOnTapDienSo('add'),
+    // 6a. Toán đố một bước trừ (mẫu xe / người hoặc ngẫu nhiên)
+    generateOnTapToanDoTru(0),
+    // 6b. Toán đố một bước trừ (mẫu mẹ mua bánh / cam / kẹo)
+    generateOnTapToanDoTru(getRandomInt(1, 5)),
+    // 7. Bài toán về "chục"
+    generateOnTapBaiToanChuc(),
+  ];
+
+  return shuffleArray(questions);
+}
+

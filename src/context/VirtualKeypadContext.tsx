@@ -1,12 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface ActiveKeypadConfig {
   title?: string;
   value: string;
-  onDigit: (d: string) => void;
-  onDelete: () => void;
-  onClear: () => void;
+  maxLength?: number;
+  onChange?: (val: string) => void;
+  onDigit?: (d: string) => void;
+  onDelete?: () => void;
+  onClear?: () => void;
   onSubmit?: () => void;
+  targetEl?: HTMLElement | null;
   anchorRect?: { top: number; left: number; width: number; height: number } | null;
 }
 
@@ -14,6 +17,8 @@ interface VirtualKeypadContextType {
   virtualKeypadEnabled: boolean;
   toggleVirtualKeypad: () => void;
   activeKeypad: (ActiveKeypadConfig & { isOpen: boolean }) | null;
+  keypadHeight: number;
+  setKeypadHeight: (h: number) => void;
   openKeypad: (config: ActiveKeypadConfig) => void;
   updateKeypadValue: (val: string) => void;
   closeKeypad: () => void;
@@ -27,13 +32,14 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
   const [virtualKeypadEnabled, setVirtualKeypadEnabled] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored !== null ? stored === 'true' : true; // Default to TRUE as requested
+      return stored !== null ? stored === 'true' : true;
     } catch {
       return true;
     }
   });
 
   const [activeKeypad, setActiveKeypad] = useState<(ActiveKeypadConfig & { isOpen: boolean }) | null>(null);
+  const [keypadHeight, setKeypadHeight] = useState<number>(0);
 
   const toggleVirtualKeypad = () => {
     setVirtualKeypadEnabled((prev) => {
@@ -42,7 +48,7 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
         localStorage.setItem(STORAGE_KEY, String(next));
       } catch {}
       if (!next) {
-        setActiveKeypad(null); // Close keypad immediately if turned off
+        setActiveKeypad(null);
       }
       return next;
     });
@@ -51,6 +57,22 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
   const openKeypad = (config: ActiveKeypadConfig) => {
     if (!virtualKeypadEnabled) return;
     setActiveKeypad({ ...config, isOpen: true });
+
+    const el =
+      config.targetEl ||
+      (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null);
+
+    if (el && typeof el.scrollIntoView === 'function') {
+      setTimeout(() => {
+        try {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch {
+          el.scrollIntoView();
+        }
+      }, 90);
+    }
   };
 
   const updateKeypadValue = (val: string) => {
@@ -67,6 +89,8 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
         virtualKeypadEnabled,
         toggleVirtualKeypad,
         activeKeypad,
+        keypadHeight,
+        setKeypadHeight,
         openKeypad,
         updateKeypadValue,
         closeKeypad,

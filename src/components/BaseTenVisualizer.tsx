@@ -41,7 +41,7 @@ export const BaseTenVisualizer: React.FC<BaseTenVisualizerProps> = ({
   return (
     <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 shadow-xs">
       {label && (
-        <div className="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+        <div className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between flex-wrap gap-1">
           <span>{label}</span>
           <span className="text-slate-500 font-normal">
             ({tens} chục + {units} đơn vị = <span className="font-bold text-slate-900">{tens * 10 + units}</span>)
@@ -52,12 +52,12 @@ export const BaseTenVisualizer: React.FC<BaseTenVisualizerProps> = ({
       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         {/* Tens Bundles (Bó chục que tính) */}
         <div>
-          <div className="text-[11px] font-semibold text-slate-500 mb-1">
+          <div className="text-sm font-semibold text-slate-600 mb-1">
             Hàng chục ({tens} bó)
           </div>
           <div className="flex flex-wrap gap-1.5 min-h-[44px] items-center">
             {tens === 0 ? (
-              <span className="text-xs text-slate-400 italic">0 bó</span>
+              <span className="text-sm text-slate-400 italic">0 bó</span>
             ) : (
               Array.from({ length: tens }).map((_, i) => (
                 <div
@@ -75,8 +75,8 @@ export const BaseTenVisualizer: React.FC<BaseTenVisualizerProps> = ({
                     ))}
                   </div>
                   {/* Tie ribbon */}
-                  <div className={`absolute inset-x-0 h-2 top-3 ${colorMap.band} opacity-90 rounded-xs flex items-center justify-center`}>
-                    <span className="text-[8px] font-black text-white leading-none">10</span>
+                  <div className={`absolute inset-x-0 h-3.5 top-2.5 ${colorMap.band} opacity-95 rounded-xs flex items-center justify-center`}>
+                    <span className="text-xs font-black text-white leading-none">10</span>
                   </div>
                 </div>
               ))
@@ -86,12 +86,12 @@ export const BaseTenVisualizer: React.FC<BaseTenVisualizerProps> = ({
 
         {/* Single Units (Que tính lẻ / Đơn vị) */}
         <div className="border-l border-slate-200 pl-4 sm:pl-6">
-          <div className="text-[11px] font-semibold text-slate-500 mb-1">
+          <div className="text-sm font-semibold text-slate-600 mb-1">
             Đơn vị ({units} que lẻ)
           </div>
           <div className="flex flex-wrap gap-1.5 min-h-[44px] items-center max-w-xs">
             {units === 0 ? (
-              <span className="text-xs text-slate-400 italic">0 que</span>
+              <span className="text-sm text-slate-400 italic">0 que</span>
             ) : (
               Array.from({ length: units }).map((_, i) => (
                 <div

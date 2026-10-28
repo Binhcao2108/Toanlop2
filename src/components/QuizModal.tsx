@@ -186,7 +186,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/20 transition-colors cursor-pointer text-white"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-white/20 transition-colors cursor-pointer text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -199,7 +199,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
               <div className="space-y-6">
                 {/* Progress bar */}
                 <div>
-                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+                  <div className="flex justify-between text-sm font-bold text-slate-600 mb-1.5">
                     <span>Câu {currentIndex + 1} / {questions.length}</span>
                     <span className="text-amber-700">Đúng: {score} câu</span>
                   </div>
@@ -213,7 +213,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
 
                 {/* Question Box */}
                 <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 text-center space-y-2">
-                  <span className="text-xs font-bold text-amber-800 uppercase tracking-wide">
+                  <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">
                     {currentQ.topic === 'tach-gop'
                       ? 'Chủ đề: Tách Gộp Số'
                       : currentQ.topic === 'cong-tru'
@@ -226,7 +226,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
                     {currentQ.prompt}
                   </div>
                   {currentQ.subPrompt && (
-                    <div className="text-xs text-slate-500 font-medium">
+                    <div className="text-sm text-slate-500 font-medium">
                       {currentQ.subPrompt}
                     </div>
                   )}
@@ -235,7 +235,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
                 {/* Input method depends on topic */}
                 {currentQ.topic === 'so-sanh' ? (
                   <div className="space-y-3">
-                    <div className="text-center text-xs font-semibold text-slate-500">
+                    <div className="text-center text-sm font-semibold text-slate-500">
                       Chọn dấu thích hợp:
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -244,7 +244,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
                           key={sym}
                           type="button"
                           onClick={() => handleAnswer(sym)}
-                          className="py-4 bg-amber-400 hover:bg-amber-500 active:scale-95 text-amber-950 font-black text-3xl rounded-xl border border-amber-500 shadow-sm transition-transform cursor-pointer"
+                          className="min-h-[52px] py-4 bg-amber-400 hover:bg-amber-500 active:scale-95 text-amber-950 font-black text-3xl rounded-xl border border-amber-500 shadow-sm transition-transform cursor-pointer"
                         >
                           {sym}
                         </button>
@@ -254,7 +254,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
                 ) : (
                   <div className="space-y-3">
                     <div className="text-center">
-                      <span className="text-xs text-slate-500 font-medium">Câu trả lời của bé:</span>
+                      <span className="text-sm text-slate-500 font-medium">Câu trả lời của bé:</span>
                       <div className="text-3xl font-black text-amber-900 h-10 flex items-center justify-center">
                         {inputVal || <span className="text-slate-300 font-normal text-2xl">Bấm số...</span>}
                       </div>
@@ -299,13 +299,13 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
               </div>
 
               {/* Review List */}
-              <div className="space-y-2 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs">
+              <div className="space-y-2 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200 text-left text-sm">
                 {questions.map((q, idx) => (
                   <div
                     key={q.id}
                     className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200/80"
                   >
-                    <span className="font-semibold text-slate-700 truncate max-w-[240px]">
+                    <span className="font-semibold text-slate-700 truncate max-w-[200px]">
                       Câu {idx + 1}: {q.prompt}
                     </span>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -315,7 +315,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
                       {q.isCorrect ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       ) : (
-                        <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
                           ✕
                         </span>
                       )}
@@ -328,7 +328,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
                 <button
                   type="button"
                   onClick={initQuiz}
-                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
+                  className="min-h-[44px] px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Chơi Lại Đề Khác</span>
@@ -336,7 +336,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-sm cursor-pointer transition-transform active:scale-95"
+                  className="min-h-[44px] px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-sm cursor-pointer transition-transform active:scale-95"
                 >
                   Đóng
                 </button>

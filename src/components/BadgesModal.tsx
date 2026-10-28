@@ -36,7 +36,7 @@ export const BadgesModal: React.FC<BadgesModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/20 transition-colors cursor-pointer text-white"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-white/20 transition-colors cursor-pointer text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -44,7 +44,7 @@ export const BadgesModal: React.FC<BadgesModalProps> = ({
 
         {/* Current Stars Banner */}
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-between">
-          <span className="text-xs font-bold text-amber-900 uppercase">
+          <span className="text-sm font-bold text-amber-900 uppercase">
             Sao vàng hiện có
           </span>
           <div className="flex items-center gap-1.5 text-amber-700 font-black text-xl">
@@ -84,18 +84,18 @@ export const BadgesModal: React.FC<BadgesModalProps> = ({
                       {b.title}
                     </h4>
                     {isUnlocked ? (
-                      <span className="flex items-center gap-1 text-emerald-700 text-xs font-bold bg-emerald-100 px-2 py-0.5 rounded-full">
+                      <span className="flex items-center gap-1 text-emerald-700 text-sm font-bold bg-emerald-100 px-2.5 py-0.5 rounded-full">
                         <CheckCircle className="w-3.5 h-3.5" />
                         Đã mở
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 text-slate-500 text-xs font-medium">
+                      <span className="flex items-center gap-1 text-slate-500 text-sm font-medium">
                         <Lock className="w-3.5 h-3.5" />
                         Cần {b.requiredStars} ★
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                  <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">
                     {b.desc}
                   </p>
 
@@ -107,7 +107,7 @@ export const BadgesModal: React.FC<BadgesModalProps> = ({
                           className="h-full bg-amber-500 rounded-full"
                         />
                       </div>
-                      <span className="text-[10px] font-bold text-slate-500">{stars}/{b.requiredStars}</span>
+                      <span className="text-sm font-bold text-slate-500">{stars}/{b.requiredStars}</span>
                     </div>
                   )}
                 </div>
@@ -121,7 +121,7 @@ export const BadgesModal: React.FC<BadgesModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-xl cursor-pointer"
+            className="min-h-[44px] px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-xl cursor-pointer"
           >
             Đóng
           </button>
