@@ -583,7 +583,7 @@ export default function App() {
               </div>
 
               {/* Topic Select Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {topicCards.map((card) => {
                   const isCurrent = currentTab === card.id;
                   return (
