@@ -69,12 +69,17 @@ export const TaiKhoanSection: React.FC<TaiKhoanSectionProps> = ({
     idText: string,
     passText: string
   ): StudentAccount | undefined => {
+    const normalizedId = idText.trim().toLowerCase();
+    const normalizedPass = passText.trim();
+    const normalizedPassLower = normalizedPass.toLowerCase();
+
     return [...list]
       .reverse()
       .find(
         (acc) =>
-          acc.id.trim().toLowerCase() === idText.toLowerCase() &&
-          acc.pass.trim() === passText
+          acc.id.trim().toLowerCase() === normalizedId &&
+          (acc.pass.trim() === normalizedPass ||
+            acc.pass.trim().toLowerCase() === normalizedPassLower)
       );
   };
 
@@ -182,6 +187,9 @@ export const TaiKhoanSection: React.FC<TaiKhoanSectionProps> = ({
                   id="student-id-input"
                   type="text"
                   autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={inputId}
                   onChange={(e) => {
                     setInputId(e.target.value);
@@ -206,6 +214,9 @@ export const TaiKhoanSection: React.FC<TaiKhoanSectionProps> = ({
                   id="student-pass-input"
                   type={showPass ? 'text' : 'password'}
                   autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={inputPass}
                   onChange={(e) => {
                     setInputPass(e.target.value);

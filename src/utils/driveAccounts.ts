@@ -7,10 +7,12 @@ export const DRIVE_FILE_NAME = 'taikhoan';
 export const DRIVE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DRIVE_FILE_ID}/edit`;
 
 // Hai sheet riêng biệt trong file bảng tính taikhoan:
-// 1. Sheet 'tai khoan': dùng để đồng bộ danh sách tài khoản đăng nhập (ID, Pass, Họ Và Tên)
-// 2. Sheet 'so sao': dùng để đồng bộ tổng số sao của từng tài khoản (ID, Mã xác nhận, Số sao)
+// 1. Sheet 'tai khoan' (gid=1444030410): dùng để đồng bộ danh sách tài khoản đăng nhập (ID, Pass, Họ Và Tên)
+// 2. Sheet 'so sao' (gid=2013539663): dùng để đồng bộ tổng số sao của từng tài khoản (ID, Mã xác nhận, Số sao)
 export const SHEET_TAI_KHOAN = 'tai khoan';
+export const SHEET_TAI_KHOAN_GID = '1444030410';
 export const SHEET_SO_SAO = 'so sao';
+export const SHEET_SO_SAO_GID = '2013539663';
 
 export const REGISTER_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSc08EZkjzL_5mjQUMtFZ6KdhQkp0h0TC1Y7RtyqhJ1KzBC-jg/viewform?fbzx=4094338494009261511';
@@ -26,7 +28,8 @@ export const ADMIN_ACCOUNT: StudentAccount = {
 export function matchAdminAccount(idText: string, passText: string): StudentAccount | null {
   if (
     idText.trim().toLowerCase() === ADMIN_ACCOUNT.id.toLowerCase() &&
-    passText.trim() === ADMIN_ACCOUNT.pass
+    (passText.trim() === ADMIN_ACCOUNT.pass ||
+      passText.trim().toLowerCase() === ADMIN_ACCOUNT.pass.toLowerCase())
   ) {
     return { ...ADMIN_ACCOUNT };
   }
@@ -38,9 +41,11 @@ export const DEFAULT_DRIVE_ACCOUNTS: StudentAccount[] = [
   { id: 'Binhck', pass: '210819', fullName: 'CAO KHÁNH BÌNH' },
   { id: 'minh', pass: '123456', fullName: 'minh' },
   { id: 'ANCK', pass: '210819', fullName: 'CAO KHÁNH AN' },
+  { id: 'tramnguyen', pass: '210819', fullName: 'Nguyễn Thị Bích Trâm' },
+  { id: 'TEST2019', pass: 'Khanhbinh', fullName: 'TEST' },
 ];
 
-const ACCOUNTS_STORAGE_KEY = 'grade2_math_drive_accounts_v3';
+const ACCOUNTS_STORAGE_KEY = 'grade2_math_drive_accounts_v4';
 const SO_SAO_MAP_STORAGE_KEY = 'grade2_math_sheet_so_sao_map_v1';
 const LAST_SYNC_STORAGE_KEY = 'grade2_math_drive_last_sync';
 const CURRENT_ACCOUNT_STORAGE_KEY = 'grade2_math_current_account';
@@ -212,6 +217,7 @@ export function saveSoSaoMap(map: Record<string, number>): void {
 
 /**
  * Fetches Sheet 2 ('so sao') directly from Google Sheets and computes the total stars per account ID.
+ * Prioritizes native CSV export (/export?format=csv&gid=2013539663) so mixed-type ID columns are never stripped by gviz.
  */
 export async function syncSoSaoSheetFromGoogleDrive(
   targetFileId = DRIVE_FILE_ID
@@ -219,29 +225,34 @@ export async function syncSoSaoSheetFromGoogleDrive(
   ok: boolean;
   starsById: Record<string, number>;
 }> {
-  const sheetUrl = `https://docs.google.com/spreadsheets/d/${targetFileId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
-    SHEET_SO_SAO
-  )}&_t=${Date.now()}`;
+  const soSaoUrls = [
+    `https://docs.google.com/spreadsheets/d/${targetFileId}/export?format=csv&gid=${SHEET_SO_SAO_GID}&_t=${Date.now()}`,
+    `https://docs.google.com/spreadsheets/d/${targetFileId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
+      SHEET_SO_SAO
+    )}&_t=${Date.now()}`,
+  ];
 
-  try {
-    const response = await fetch(sheetUrl, { cache: 'no-store' });
-    if (response.ok) {
-      const csvText = await response.text();
-      const parsed = parseSoSaoCsv(csvText);
-      if (parsed.validSheet) {
-        saveSoSaoMap(parsed.starsById);
-        // Đồng bộ tổng số sao từ sheet 'so sao' vào bộ nhớ từng tài khoản (không làm giảm số sao nếu trên máy đang có sao chờ gửi)
-        Object.entries(parsed.starsById).forEach(([idLower, sheetTotal]) => {
-          const currentLocal = getAccountStars(idLower);
-          if (sheetTotal > currentLocal) {
-            saveAccountStars(sheetTotal, idLower);
-          }
-        });
-        return { ok: true, starsById: parsed.starsById };
+  for (const sheetUrl of soSaoUrls) {
+    try {
+      const response = await fetch(sheetUrl, { cache: 'no-store' });
+      if (response.ok) {
+        const csvText = await response.text();
+        const parsed = parseSoSaoCsv(csvText);
+        if (parsed.validSheet) {
+          saveSoSaoMap(parsed.starsById);
+          // Đồng bộ tổng số sao từ sheet 'so sao' vào bộ nhớ từng tài khoản (không làm giảm số sao nếu trên máy đang có sao chờ gửi)
+          Object.entries(parsed.starsById).forEach(([idLower, sheetTotal]) => {
+            const currentLocal = getAccountStars(idLower);
+            if (sheetTotal > currentLocal) {
+              saveAccountStars(sheetTotal, idLower);
+            }
+          });
+          return { ok: true, starsById: parsed.starsById };
+        }
       }
+    } catch {
+      // try next URL
     }
-  } catch {
-    // fallback below
   }
 
   try {
@@ -338,6 +349,9 @@ export function saveAccountStars(stars: number, accountId?: string | null): void
 /**
  * Syncs login accounts from Sheet 1 ('tai khoan') and total stars from Sheet 2 ('so sao')
  * inside the Google Drive spreadsheet (taikhoan).
+ *
+ * Uses `/export?format=csv&gid=1444030410` as the primary endpoint because Google Visualization API (`gviz/tq`)
+ * drops text values (passwords containing letters) when a column is predominantly numeric.
  */
 export async function syncAccountsFromGoogleDrive(customFileOrFolderInput?: string): Promise<{
   accounts: StudentAccount[];
@@ -356,12 +370,15 @@ export async function syncAccountsFromGoogleDrive(customFileOrFolderInput?: stri
   // Đồng bộ song song Sheet 'so sao' để lấy tổng số sao của từng tài khoản
   void syncSoSaoSheetFromGoogleDrive(targetFileId);
 
-  // Chỉ định rõ ràng sheet='tai khoan' để lấy danh sách tài khoản đăng nhập (ID, Pass)
+  // Ưu tiên `/export?format=csv&gid=1444030410` để lấy đầy đủ cả mật khẩu số và mật khẩu có chữ (tránh lỗi gviz/tq bỏ trống ô chữ trong cột số)
   const urlsToTry = [
+    `https://docs.google.com/spreadsheets/d/${targetFileId}/export?format=csv&gid=${SHEET_TAI_KHOAN_GID}&_t=${Date.now()}`,
     `https://docs.google.com/spreadsheets/d/${targetFileId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
       SHEET_TAI_KHOAN
     )}&_t=${Date.now()}`,
   ];
+
+  const mergedById = new Map<string, StudentAccount>();
 
   for (const url of urlsToTry) {
     try {
@@ -369,28 +386,40 @@ export async function syncAccountsFromGoogleDrive(customFileOrFolderInput?: stri
       if (response.ok) {
         const csvText = await response.text();
         const parsed = parseAccountsCsv(csvText);
-        if (parsed.length > 0) {
-          const syncedAt = new Date().toLocaleTimeString('vi-VN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
-          try {
-            localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(parsed));
-            localStorage.setItem(LAST_SYNC_STORAGE_KEY, syncedAt);
-          } catch {
-            // ignore
+        for (const acc of parsed) {
+          const key = acc.id.trim().toLowerCase();
+          if (!mergedById.has(key)) {
+            mergedById.set(key, acc);
           }
-          return {
-            accounts: parsed,
-            syncedAt,
-            source: `Google Drive (${DRIVE_FILE_NAME} - sheet "${SHEET_TAI_KHOAN}")`,
-          };
+        }
+        // Nếu endpoint đầu tiên (export?format=csv) đã lấy được danh sách đầy đủ thì dùng ngay
+        if (mergedById.size > 0 && url.includes('/export?format=csv')) {
+          break;
         }
       }
     } catch {
-      // Try fallback
+      // Try next URL
     }
+  }
+
+  if (mergedById.size > 0) {
+    const finalAccounts = Array.from(mergedById.values());
+    const syncedAt = new Date().toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    try {
+      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(finalAccounts));
+      localStorage.setItem(LAST_SYNC_STORAGE_KEY, syncedAt);
+    } catch {
+      // ignore
+    }
+    return {
+      accounts: finalAccounts,
+      syncedAt,
+      source: `Google Drive (${DRIVE_FILE_NAME} - sheet "${SHEET_TAI_KHOAN}")`,
+    };
   }
 
   try {
