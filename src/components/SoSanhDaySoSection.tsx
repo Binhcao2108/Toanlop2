@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, ArrowDownAZ, ArrowUpAZ, RefreshCw } from 'lucide-react';
 import { SoSanhQuestion } from '../types/math';
 import { generateSoSanhQuestion } from '../utils/mathGenerators';
 import { sound } from '../utils/audio';
+import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface SoSanhDaySoSectionProps {
   onEarnStar: () => void;
 }
 
 export const SoSanhDaySoSection: React.FC<SoSanhDaySoSectionProps> = ({ onEarnStar }) => {
+  const { closeKeypad } = useVirtualKeypad();
   const [subType, setSubType] = useState<'all' | 'two-numbers' | 'sort-sequence'>('all');
+
+  useEffect(() => {
+    closeKeypad();
+  }, []);
   const [question, setQuestion] = useState<SoSanhQuestion>(() => generateSoSanhQuestion());
 
   const [chosenSymbol, setChosenSymbol] = useState<'>' | '<' | '=' | null>(null);

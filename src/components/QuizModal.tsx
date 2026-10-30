@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Trophy, CheckCircle2, RotateCcw, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sound } from '../utils/audio';
@@ -10,6 +10,7 @@ import {
   generateSoSanhQuestion,
 } from '../utils/mathGenerators';
 import { NumberPad } from './NumberPad';
+import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface QuizModalProps {
   isOpen: boolean;
@@ -28,9 +29,11 @@ interface QuizItem {
 }
 
 export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnStars }) => {
+  const { closeKeypad } = useVirtualKeypad();
   const [questions, setQuestions] = useState<QuizItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [inputVal, setInputVal] = useState<string>('');
+  const inputValRef = useRef<string>('');
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [score, setScore] = useState<number>(0);
 
@@ -115,6 +118,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
     const shuffled = list.sort(() => Math.random() - 0.5);
     setQuestions(shuffled);
     setCurrentIndex(0);
+    inputValRef.current = '';
     setInputVal('');
     setIsFinished(false);
     setScore(0);
@@ -122,6 +126,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
 
   useEffect(() => {
     if (isOpen) {
+      closeKeypad();
       initQuiz();
     }
   }, [isOpen]);
@@ -150,6 +155,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
 
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
+      inputValRef.current = '';
       setInputVal('');
     } else {
       // Completed!
@@ -262,12 +268,23 @@ export const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, onEarnSta
 
                     <NumberPad
                       onNumberClick={(d) => {
-                        if (inputVal.length < 3) setInputVal((p) => p + d);
+                        if (inputValRef.current.length < 3) {
+                          const next = inputValRef.current + d;
+                          inputValRef.current = next;
+                          setInputVal(next);
+                        }
                       }}
-                      onDelete={() => setInputVal((p) => p.slice(0, -1))}
-                      onClear={() => setInputVal('')}
+                      onDelete={() => {
+                        const next = inputValRef.current.slice(0, -1);
+                        inputValRef.current = next;
+                        setInputVal(next);
+                      }}
+                      onClear={() => {
+                        inputValRef.current = '';
+                        setInputVal('');
+                      }}
                       onSubmit={() => {
-                        if (inputVal) handleAnswer(inputVal);
+                        if (inputValRef.current) handleAnswer(inputValRef.current);
                       }}
                       submitDisabled={!inputVal}
                     />

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, ReactNode } from 'react';
 
 export interface ActiveKeypadConfig {
   title?: string;
@@ -8,7 +8,7 @@ export interface ActiveKeypadConfig {
   onDigit?: (d: string) => void;
   onDelete?: () => void;
   onClear?: () => void;
-  onSubmit?: () => void;
+  onSubmit?: (currentVal?: string) => void;
   targetEl?: HTMLElement | null;
   anchorRect?: { top: number; left: number; width: number; height: number } | null;
 }
@@ -21,6 +21,7 @@ interface VirtualKeypadContextType {
   setKeypadHeight: (h: number) => void;
   openKeypad: (config: ActiveKeypadConfig) => void;
   updateKeypadValue: (val: string) => void;
+  getKeypadValue: () => string;
   closeKeypad: () => void;
 }
 
@@ -39,6 +40,7 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
   });
 
   const [activeKeypad, setActiveKeypad] = useState<(ActiveKeypadConfig & { isOpen: boolean }) | null>(null);
+  const activeValueRef = useRef<string>('');
   const [keypadHeight, setKeypadHeight] = useState<number>(0);
 
   const toggleVirtualKeypad = () => {
@@ -48,6 +50,7 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
         localStorage.setItem(STORAGE_KEY, String(next));
       } catch {}
       if (!next) {
+        activeValueRef.current = '';
         setActiveKeypad(null);
       }
       return next;
@@ -56,6 +59,7 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
 
   const openKeypad = (config: ActiveKeypadConfig) => {
     if (!virtualKeypadEnabled) return;
+    activeValueRef.current = config.value || '';
     setActiveKeypad({ ...config, isOpen: true });
 
     const el =
@@ -76,10 +80,14 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
   };
 
   const updateKeypadValue = (val: string) => {
+    activeValueRef.current = val;
     setActiveKeypad((prev) => (prev ? { ...prev, value: val } : null));
   };
 
+  const getKeypadValue = () => activeValueRef.current;
+
   const closeKeypad = () => {
+    activeValueRef.current = '';
     setActiveKeypad(null);
   };
 
@@ -93,6 +101,7 @@ export const VirtualKeypadProvider: React.FC<{ children: ReactNode }> = ({ child
         setKeypadHeight,
         openKeypad,
         updateKeypadValue,
+        getKeypadValue,
         closeKeypad,
       }}
     >

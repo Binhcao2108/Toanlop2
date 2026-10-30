@@ -9,6 +9,7 @@ export const FloatingVirtualKeypad: React.FC = () => {
     activeKeypad,
     setKeypadHeight,
     updateKeypadValue,
+    getKeypadValue,
     closeKeypad,
   } = useVirtualKeypad();
 
@@ -50,7 +51,7 @@ export const FloatingVirtualKeypad: React.FC = () => {
 
   const handleDigit = (d: string) => {
     sound.playClick();
-    const cur = activeKeypad.value || '';
+    const cur = getKeypadValue() || '';
     const max = activeKeypad.maxLength ?? 3;
     let next: string;
     if (cur.length < max) {
@@ -74,7 +75,7 @@ export const FloatingVirtualKeypad: React.FC = () => {
 
   const handleDelete = () => {
     sound.playClick();
-    const cur = activeKeypad.value || '';
+    const cur = getKeypadValue() || '';
     const next = cur.slice(0, -1);
     updateKeypadValue(next);
     if (activeKeypad.onChange) {
@@ -99,10 +100,12 @@ export const FloatingVirtualKeypad: React.FC = () => {
 
   const handleSubmit = () => {
     sound.playClick();
-    if (activeKeypad.onSubmit) {
-      activeKeypad.onSubmit();
-    }
+    const latestVal = getKeypadValue();
+    const submitFn = activeKeypad.onSubmit;
     closeKeypad();
+    if (submitFn) {
+      submitFn(latestVal);
+    }
   };
 
   return (

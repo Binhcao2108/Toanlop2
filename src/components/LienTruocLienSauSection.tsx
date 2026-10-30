@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, RotateCcw, CheckCircle2, ChevronRight, Navigation, Train } from 'lucide-react';
 import { LienTruocSauQuestion } from '../types/math';
 import { generateLienTruocSauQuestion } from '../utils/mathGenerators';
@@ -14,7 +14,11 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
   const { openKeypad, updateKeypadValue, closeKeypad } = useVirtualKeypad();
   const [question, setQuestion] = useState<LienTruocSauQuestion>(() => generateLienTruocSauQuestion());
 
-  const [activeSlot, setActiveSlot] = useState<'before' | 'after' | 'middle'>('before');
+  const [activeSlot, setActiveSlot] = useState<'before' | 'after' | 'middle'>(() => {
+    if (question.type === 'after') return 'after';
+    if (question.type === 'middle') return 'middle';
+    return 'before';
+  });
   const [inputBefore, setInputBefore] = useState<string>('');
   const [inputAfter, setInputAfter] = useState<string>('');
   const [inputMiddle, setInputMiddle] = useState<string>('');
@@ -24,92 +28,183 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
   const [numberLineCenter, setNumberLineCenter] = useState<number>(question.targetNumber);
   const [streak, setStreak] = useState<number>(0);
 
+  const activeSlotRef = useRef<'before' | 'after' | 'middle'>(activeSlot);
+  const inputBeforeRef = useRef<string>('');
+  const inputAfterRef = useRef<string>('');
+  const inputMiddleRef = useRef<string>('');
+  const questionRef = useRef<LienTruocSauQuestion>(question);
+  const statusRef = useRef<'idle' | 'correct' | 'wrong'>('idle');
+
+  useEffect(() => {
+    activeSlotRef.current = activeSlot;
+    inputBeforeRef.current = inputBefore;
+    inputAfterRef.current = inputAfter;
+    inputMiddleRef.current = inputMiddle;
+    questionRef.current = question;
+    statusRef.current = status;
+  }, [activeSlot, inputBefore, inputAfter, inputMiddle, question, status]);
+
   const nextQuestion = () => {
     const q = generateLienTruocSauQuestion();
+    questionRef.current = q;
+    inputBeforeRef.current = '';
+    inputAfterRef.current = '';
+    inputMiddleRef.current = '';
+    statusRef.current = 'idle';
+
+    const nextSlot =
+      q.type === 'after' ? 'after' : q.type === 'middle' ? 'middle' : 'before';
+    activeSlotRef.current = nextSlot;
+
     setQuestion(q);
     setInputBefore('');
     setInputAfter('');
     setInputMiddle('');
     setStatus('idle');
     setNumberLineCenter(q.targetNumber);
+    setActiveSlot(nextSlot);
     closeKeypad();
-    if (q.type === 'after') setActiveSlot('after');
-    else if (q.type === 'middle') setActiveSlot('middle');
-    else setActiveSlot('before');
   };
 
   const isCurrentValid = () => {
-    if (question.type === 'before') {
-      return parseInt(inputBefore, 10) === question.beforeVal;
+    const q = questionRef.current;
+    if (q.type === 'before') {
+      return parseInt(inputBeforeRef.current, 10) === q.beforeVal;
     }
-    if (question.type === 'after') {
-      return parseInt(inputAfter, 10) === question.afterVal;
+    if (q.type === 'after') {
+      return parseInt(inputAfterRef.current, 10) === q.afterVal;
     }
-    if (question.type === 'middle') {
-      return parseInt(inputMiddle, 10) === question.targetNumber;
+    if (q.type === 'middle') {
+      return parseInt(inputMiddleRef.current, 10) === q.targetNumber;
     }
     return (
-      parseInt(inputBefore, 10) === question.beforeVal &&
-      parseInt(inputAfter, 10) === question.afterVal
+      parseInt(inputBeforeRef.current, 10) === q.beforeVal &&
+      parseInt(inputAfterRef.current, 10) === q.afterVal
     );
   };
 
   const handleCheck = () => {
+    if (statusRef.current === 'correct') return;
+
     if (isCurrentValid()) {
       sound.playCorrect();
+      statusRef.current = 'correct';
       setStatus('correct');
       setStreak((s) => s + 1);
       onEarnStar();
     } else {
       sound.playIncorrect();
+      statusRef.current = 'wrong';
       setStatus('wrong');
     }
   };
 
+  const handleFloatingSubmit = () => {
+    const q = questionRef.current;
+    if (q.type === 'before') {
+      if (inputBeforeRef.current.trim()) handleCheck();
+      return;
+    }
+    if (q.type === 'after') {
+      if (inputAfterRef.current.trim()) handleCheck();
+      return;
+    }
+    if (q.type === 'middle') {
+      if (inputMiddleRef.current.trim()) handleCheck();
+      return;
+    }
+    // q.type === 'both'
+    const b = inputBeforeRef.current.trim();
+    const a = inputAfterRef.current.trim();
+    if (b && a) {
+      handleCheck();
+    } else if (!b) {
+      activeSlotRef.current = 'before';
+      setActiveSlot('before');
+    } else {
+      activeSlotRef.current = 'after';
+      setActiveSlot('after');
+    }
+  };
+
   const handlePadDigit = (d: string) => {
-    if (question.type === 'before' || (question.type === 'both' && activeSlot === 'before')) {
-      const next = inputBefore.length < 3 ? inputBefore + d : inputBefore;
+    const q = questionRef.current;
+    const slot = activeSlotRef.current;
+    if (q.type === 'before' || (q.type === 'both' && slot === 'before')) {
+      const cur = inputBeforeRef.current;
+      const next = cur.length < 3 ? cur + d : cur;
+      inputBeforeRef.current = next;
       setInputBefore(next);
       updateKeypadValue(next);
-    } else if (question.type === 'after' || (question.type === 'both' && activeSlot === 'after')) {
-      const next = inputAfter.length < 3 ? inputAfter + d : inputAfter;
+    } else if (q.type === 'after' || (q.type === 'both' && slot === 'after')) {
+      const cur = inputAfterRef.current;
+      const next = cur.length < 3 ? cur + d : cur;
+      inputAfterRef.current = next;
       setInputAfter(next);
       updateKeypadValue(next);
-    } else if (question.type === 'middle') {
-      const next = inputMiddle.length < 3 ? inputMiddle + d : inputMiddle;
+    } else if (q.type === 'middle') {
+      const cur = inputMiddleRef.current;
+      const next = cur.length < 3 ? cur + d : cur;
+      inputMiddleRef.current = next;
       setInputMiddle(next);
       updateKeypadValue(next);
     }
+    statusRef.current = 'idle';
     setStatus('idle');
   };
 
   const handlePadDelete = () => {
-    if (question.type === 'before' || (question.type === 'both' && activeSlot === 'before')) {
-      const next = inputBefore.slice(0, -1);
+    const q = questionRef.current;
+    const slot = activeSlotRef.current;
+    if (q.type === 'before' || (q.type === 'both' && slot === 'before')) {
+      const next = inputBeforeRef.current.slice(0, -1);
+      inputBeforeRef.current = next;
       setInputBefore(next);
       updateKeypadValue(next);
-    } else if (question.type === 'after' || (question.type === 'both' && activeSlot === 'after')) {
-      const next = inputAfter.slice(0, -1);
-      setInputAfter(next);
-      updateKeypadValue(next);
-    } else if (question.type === 'middle') {
-      const next = inputMiddle.slice(0, -1);
+    } else if (q.type === 'after' || (q.type === 'both' && slot === 'after')) {
+      if (q.type === 'both' && !inputAfterRef.current && inputBeforeRef.current) {
+        activeSlotRef.current = 'before';
+        setActiveSlot('before');
+        const next = inputBeforeRef.current.slice(0, -1);
+        inputBeforeRef.current = next;
+        setInputBefore(next);
+        updateKeypadValue(next);
+      } else {
+        const next = inputAfterRef.current.slice(0, -1);
+        inputAfterRef.current = next;
+        setInputAfter(next);
+        updateKeypadValue(next);
+      }
+    } else if (q.type === 'middle') {
+      const next = inputMiddleRef.current.slice(0, -1);
+      inputMiddleRef.current = next;
       setInputMiddle(next);
       updateKeypadValue(next);
     }
+    statusRef.current = 'idle';
     setStatus('idle');
   };
 
   const handlePadClear = () => {
-    if (question.type === 'both') {
-      if (activeSlot === 'before') setInputBefore('');
-      else setInputAfter('');
+    const q = questionRef.current;
+    if (q.type === 'both') {
+      if (activeSlotRef.current === 'before') {
+        inputBeforeRef.current = '';
+        setInputBefore('');
+      } else {
+        inputAfterRef.current = '';
+        setInputAfter('');
+      }
     } else {
+      inputBeforeRef.current = '';
+      inputAfterRef.current = '';
+      inputMiddleRef.current = '';
       setInputBefore('');
       setInputAfter('');
       setInputMiddle('');
     }
     updateKeypadValue('');
+    statusRef.current = 'idle';
     setStatus('idle');
   };
 
@@ -120,7 +215,7 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
       } else if (e.key === 'Backspace') {
         handlePadDelete();
       } else if (e.key === 'Enter') {
-        if (status === 'correct') {
+        if (statusRef.current === 'correct') {
           nextQuestion();
         } else {
           handleCheck();
@@ -222,17 +317,22 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                     placeholder="?"
                     onClick={(e) => {
                       sound.playClick();
+                      activeSlotRef.current = 'before';
                       setActiveSlot('before');
                       openKeypad({
                         title: 'Số liền trước (-1)',
-                        value: inputBefore,
+                        value: inputBeforeRef.current,
                         maxLength: 3,
                         targetEl: e.currentTarget,
                         onChange: (val) => {
+                          inputBeforeRef.current = val;
                           setInputBefore(val);
+                          statusRef.current = 'idle';
                           setStatus('idle');
                         },
-                        onSubmit: handleCheck,
+                        onSubmit: () => {
+                          handleFloatingSubmit();
+                        },
                       });
                     }}
                     className={`w-full h-18 sm:h-20 rounded-xl text-center font-black text-2xl sm:text-3xl border-3 shadow-md outline-none cursor-pointer ${
@@ -264,17 +364,22 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                     placeholder="?"
                     onClick={(e) => {
                       sound.playClick();
+                      activeSlotRef.current = 'middle';
                       setActiveSlot('middle');
                       openKeypad({
                         title: 'Số ở giữa',
-                        value: inputMiddle,
+                        value: inputMiddleRef.current,
                         maxLength: 3,
                         targetEl: e.currentTarget,
                         onChange: (val) => {
+                          inputMiddleRef.current = val;
                           setInputMiddle(val);
+                          statusRef.current = 'idle';
                           setStatus('idle');
                         },
-                        onSubmit: handleCheck,
+                        onSubmit: () => {
+                          handleFloatingSubmit();
+                        },
                       });
                     }}
                     className="w-full h-18 sm:h-20 rounded-xl text-center font-black text-2xl sm:text-3xl border-3 bg-indigo-100 border-indigo-500 text-indigo-950 animate-pulse-glow shadow-md outline-none cursor-pointer placeholder:text-slate-300"
@@ -302,17 +407,22 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                     placeholder="?"
                     onClick={(e) => {
                       sound.playClick();
+                      activeSlotRef.current = 'after';
                       setActiveSlot('after');
                       openKeypad({
                         title: 'Số liền sau (+1)',
-                        value: inputAfter,
+                        value: inputAfterRef.current,
                         maxLength: 3,
                         targetEl: e.currentTarget,
                         onChange: (val) => {
+                          inputAfterRef.current = val;
                           setInputAfter(val);
+                          statusRef.current = 'idle';
                           setStatus('idle');
                         },
-                        onSubmit: handleCheck,
+                        onSubmit: () => {
+                          handleFloatingSubmit();
+                        },
                       });
                     }}
                     className={`w-full h-18 sm:h-20 rounded-xl text-center font-black text-2xl sm:text-3xl border-3 shadow-md outline-none cursor-pointer ${
@@ -449,6 +559,7 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                   type="button"
                   onClick={() => {
                     sound.playClick();
+                    activeSlotRef.current = 'before';
                     setActiveSlot('before');
                   }}
                   className={`min-h-[44px] py-2 px-2 rounded-xl text-sm font-bold border transition-colors cursor-pointer text-center ${
@@ -463,6 +574,7 @@ export const LienTruocLienSauSection: React.FC<LienTruocLienSauSectionProps> = (
                   type="button"
                   onClick={() => {
                     sound.playClick();
+                    activeSlotRef.current = 'after';
                     setActiveSlot('after');
                   }}
                   className={`min-h-[44px] py-2 px-2 rounded-xl text-sm font-bold border transition-colors cursor-pointer text-center ${

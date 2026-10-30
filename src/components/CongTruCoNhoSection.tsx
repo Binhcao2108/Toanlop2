@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, BookOpen } from 'lucide-react';
 import { CongTruQuestion } from '../types/math';
 import { generateCongTruQuestion, CongTruRange } from '../utils/mathGenerators';
@@ -30,9 +30,32 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
   const [streak, setStreak] = useState<number>(0);
 
+  const unitInputRef = useRef<string>('');
+  const tensInputRef = useRef<string>('');
+  const carryInputRef = useRef<string>('');
+  const activeSlotRef = useRef<'unit' | 'tens' | 'carry'>('unit');
+  const questionRef = useRef<CongTruQuestion>(question);
+  const statusRef = useRef<'idle' | 'correct' | 'wrong'>('idle');
+
+  useEffect(() => {
+    unitInputRef.current = unitInput;
+    tensInputRef.current = tensInput;
+    carryInputRef.current = carryInput;
+    activeSlotRef.current = activeSlot;
+    questionRef.current = question;
+    statusRef.current = status;
+  }, [unitInput, tensInput, carryInput, activeSlot, question, status]);
+
   const nextQuestion = (op = opChoice, range = rangeChoice) => {
     const chosenOp = op === 'both' ? (Math.random() < 0.5 ? '+' : '-') : op;
     const q = generateCongTruQuestion({ operation: chosenOp, range });
+    questionRef.current = q;
+    unitInputRef.current = '';
+    tensInputRef.current = '';
+    carryInputRef.current = '';
+    activeSlotRef.current = 'unit';
+    statusRef.current = 'idle';
+
     setQuestion(q);
     setUnitInput('');
     setTensInput('');
@@ -57,25 +80,30 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
   };
 
   const handleCheck = () => {
-    const expectedUnit = question.result % 10;
-    const expectedTens = Math.floor(question.result / 10);
+    if (statusRef.current === 'correct') return;
+
+    const q = questionRef.current;
+    const expectedUnit = q.result % 10;
+    const expectedTens = Math.floor(q.result / 10);
     const expectedCarry = 1;
 
-    const u = parseInt(unitInput, 10);
-    const t = parseInt(tensInput, 10);
-    const c = parseInt(carryInput, 10);
+    const u = parseInt(unitInputRef.current, 10);
+    const t = parseInt(tensInputRef.current, 10);
+    const c = parseInt(carryInputRef.current, 10);
 
     const isResultCorrect = u === expectedUnit && t === expectedTens;
     const isCarryCorrect = c === expectedCarry;
 
     if (isResultCorrect && isCarryCorrect) {
       sound.playCorrect();
+      statusRef.current = 'correct';
       setStatus('correct');
       setErrorMessage('');
       setStreak((s) => s + 1);
       onEarnStar();
     } else {
       sound.playIncorrect();
+      statusRef.current = 'wrong';
       setStatus('wrong');
       if (!isResultCorrect && !isCarryCorrect) {
         setErrorMessage('Kết quả và số nhớ đều chưa đúng, bé hãy tính lại nhé!');
@@ -87,43 +115,98 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
     }
   };
 
+  const handleFloatingSubmit = () => {
+    const u = unitInputRef.current.trim();
+    const t = tensInputRef.current.trim();
+    const c = carryInputRef.current.trim();
+
+    if (u && t && c) {
+      handleCheck();
+    } else if (!u) {
+      activeSlotRef.current = 'unit';
+      setActiveSlot('unit');
+    } else if (!t) {
+      activeSlotRef.current = 'tens';
+      setActiveSlot('tens');
+    } else {
+      activeSlotRef.current = 'carry';
+      setActiveSlot('carry');
+    }
+  };
+
   const handleDigit = (d: string) => {
-    if (activeSlot === 'unit') {
+    const slot = activeSlotRef.current;
+    if (slot === 'unit') {
+      unitInputRef.current = d;
       setUnitInput(d);
       updateKeypadValue(d);
+      activeSlotRef.current = 'tens';
       setActiveSlot('tens');
-    } else if (activeSlot === 'tens') {
+    } else if (slot === 'tens') {
+      tensInputRef.current = d;
       setTensInput(d);
       updateKeypadValue(d);
+      activeSlotRef.current = 'carry';
       setActiveSlot('carry');
     } else {
+      carryInputRef.current = d;
       setCarryInput(d);
       updateKeypadValue(d);
     }
+    statusRef.current = 'idle';
     setStatus('idle');
+    setErrorMessage('');
   };
 
   const handleDelete = () => {
-    if (activeSlot === 'unit') {
+    const slot = activeSlotRef.current;
+    if (slot === 'unit') {
+      unitInputRef.current = '';
       setUnitInput('');
       updateKeypadValue('');
-    } else if (activeSlot === 'tens') {
-      setTensInput('');
-      updateKeypadValue('');
+    } else if (slot === 'tens') {
+      if (tensInputRef.current) {
+        tensInputRef.current = '';
+        setTensInput('');
+        updateKeypadValue('');
+      } else {
+        activeSlotRef.current = 'unit';
+        setActiveSlot('unit');
+        unitInputRef.current = '';
+        setUnitInput('');
+        updateKeypadValue('');
+      }
     } else {
-      setCarryInput('');
-      updateKeypadValue('');
+      if (carryInputRef.current) {
+        carryInputRef.current = '';
+        setCarryInput('');
+        updateKeypadValue('');
+      } else {
+        activeSlotRef.current = 'tens';
+        setActiveSlot('tens');
+        tensInputRef.current = '';
+        setTensInput('');
+        updateKeypadValue('');
+      }
     }
+    statusRef.current = 'idle';
     setStatus('idle');
+    setErrorMessage('');
   };
 
   const handleClear = () => {
+    unitInputRef.current = '';
+    tensInputRef.current = '';
+    carryInputRef.current = '';
+    activeSlotRef.current = 'unit';
+    statusRef.current = 'idle';
     setUnitInput('');
     setTensInput('');
     setCarryInput('');
     updateKeypadValue('');
     setActiveSlot('unit');
     setStatus('idle');
+    setErrorMessage('');
   };
 
   useEffect(() => {
@@ -133,7 +216,7 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
       } else if (e.key === 'Backspace') {
         handleDelete();
       } else if (e.key === 'Enter') {
-        if (status === 'correct') {
+        if (statusRef.current === 'correct') {
           nextQuestion();
         } else {
           handleCheck();
@@ -148,51 +231,75 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
 
   const openTensSlot = (el: HTMLElement) => {
     sound.playClick();
+    activeSlotRef.current = 'tens';
     setActiveSlot('tens');
     openKeypad({
       title: 'Chữ số Hàng Chục',
-      value: tensInput,
+      value: tensInputRef.current,
       maxLength: 1,
       targetEl: el,
       onChange: (val) => {
+        tensInputRef.current = val;
         setTensInput(val);
+        statusRef.current = 'idle';
         setStatus('idle');
-        if (val) setActiveSlot('carry');
+        setErrorMessage('');
+        if (val && !carryInputRef.current) {
+          activeSlotRef.current = 'carry';
+          setActiveSlot('carry');
+        }
       },
-      onSubmit: handleCheck,
+      onSubmit: () => {
+        handleFloatingSubmit();
+      },
     });
   };
 
   const openUnitSlot = (el: HTMLElement) => {
     sound.playClick();
+    activeSlotRef.current = 'unit';
     setActiveSlot('unit');
     openKeypad({
       title: 'Chữ số Hàng Đơn Vị',
-      value: unitInput,
+      value: unitInputRef.current,
       maxLength: 1,
       targetEl: el,
       onChange: (val) => {
+        unitInputRef.current = val;
         setUnitInput(val);
+        statusRef.current = 'idle';
         setStatus('idle');
-        if (val) setActiveSlot('tens');
+        setErrorMessage('');
+        if (val && !tensInputRef.current) {
+          activeSlotRef.current = 'tens';
+          setActiveSlot('tens');
+        }
       },
-      onSubmit: handleCheck,
+      onSubmit: () => {
+        handleFloatingSubmit();
+      },
     });
   };
 
   const openCarrySlot = (el: HTMLElement) => {
     sound.playClick();
+    activeSlotRef.current = 'carry';
     setActiveSlot('carry');
     openKeypad({
       title: isAddition ? 'Ô Ghi Nhớ 1 (phía bên phải)' : 'Ô Mượn/Nhớ 1 (phía bên phải)',
-      value: carryInput,
+      value: carryInputRef.current,
       maxLength: 1,
       targetEl: el,
       onChange: (val) => {
+        carryInputRef.current = val;
         setCarryInput(val);
+        statusRef.current = 'idle';
         setStatus('idle');
+        setErrorMessage('');
       },
-      onSubmit: handleCheck,
+      onSubmit: () => {
+        handleFloatingSubmit();
+      },
     });
   };
 
@@ -428,13 +535,7 @@ export const CongTruCoNhoSection: React.FC<CongTruCoNhoSectionProps> = ({ onEarn
                 <span>{errorMessage || 'Chưa đúng rồi! Bé hãy kiểm tra lại kết quả hoặc số nhớ 1 nhé!'}</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setUnitInput('');
-                    setTensInput('');
-                    setCarryInput('');
-                    setActiveSlot('unit');
-                    setStatus('idle');
-                  }}
+                  onClick={handleClear}
                   className="min-h-[44px] px-3 py-1.5 text-sm font-bold underline hover:text-rose-900 cursor-pointer"
                 >
                   Làm lại

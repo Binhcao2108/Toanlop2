@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, Layers } from 'lucide-react';
 import { WordProblemQuestion } from '../types/math';
 import { generateWordProblemQuestion } from '../utils/mathGenerators';
@@ -28,9 +28,25 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
   const [showScratchpad, setShowScratchpad] = useState<boolean>(false);
   const [scratchTens, setScratchTens] = useState<string>('');
   const [scratchUnit, setScratchUnit] = useState<string>('');
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const isDrawingRef = React.useRef<boolean>(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef<boolean>(false);
   const [streak, setStreak] = useState<number>(0);
+
+  const userResultInputRef = useRef<string>('');
+  const chosenOpRef = useRef<'+' | '-' | null>(null);
+  const questionRef = useRef<WordProblemQuestion>(question);
+  const statusRef = useRef<'idle' | 'correct' | 'wrong'>('idle');
+  const scratchTensRef = useRef<string>('');
+  const scratchUnitRef = useRef<string>('');
+
+  useEffect(() => {
+    userResultInputRef.current = userResultInput;
+    chosenOpRef.current = chosenOp;
+    questionRef.current = question;
+    statusRef.current = status;
+    scratchTensRef.current = scratchTens;
+    scratchUnitRef.current = scratchUnit;
+  }, [userResultInput, chosenOp, question, status, scratchTens, scratchUnit]);
 
   const handleClearCanvas = () => {
     const canvas = canvasRef.current;
@@ -42,16 +58,25 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
 
   const handleApplyScratchToResult = () => {
     sound.playClick();
-    const combined = `${scratchTens}${scratchUnit}`.trim();
+    const combined = `${scratchTensRef.current}${scratchUnitRef.current}`.trim();
     if (combined) {
+      userResultInputRef.current = combined;
       setUserResultInput(combined);
       updateKeypadValue(combined);
+      statusRef.current = 'idle';
       setStatus('idle');
     }
   };
 
   const nextQuestion = (diff = difficulty, cat = category) => {
     const q = generateWordProblemQuestion({ difficulty: diff, category: cat });
+    questionRef.current = q;
+    userResultInputRef.current = '';
+    chosenOpRef.current = null;
+    scratchTensRef.current = '';
+    scratchUnitRef.current = '';
+    statusRef.current = 'idle';
+
     setQuestion(q);
     setUserResultInput('');
     setChosenOp(null);
@@ -77,17 +102,26 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
   };
 
   const handleCheck = () => {
-    const res = parseInt(userResultInput, 10);
-    const isOpCorrect = chosenOp ? chosenOp === question.operation : true;
-    const isResultCorrect = res === question.result;
+    if (statusRef.current === 'correct') return;
+
+    const raw = userResultInputRef.current.trim();
+    if (!raw) return;
+
+    const q = questionRef.current;
+    const op = chosenOpRef.current;
+    const res = parseInt(raw, 10);
+    const isOpCorrect = op ? op === q.operation : true;
+    const isResultCorrect = res === q.result;
 
     if (isResultCorrect && isOpCorrect) {
       sound.playCorrect();
+      statusRef.current = 'correct';
       setStatus('correct');
       setStreak((s) => s + 1);
       onEarnStar();
     } else {
       sound.playIncorrect();
+      statusRef.current = 'wrong';
       setStatus('wrong');
     }
   };
@@ -95,22 +129,29 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key >= '0' && e.key <= '9') {
-        if (userResultInput.length < 3) {
-          const next = userResultInput + e.key;
+        if (userResultInputRef.current.length < 3) {
+          const next = userResultInputRef.current + e.key;
+          userResultInputRef.current = next;
           setUserResultInput(next);
           updateKeypadValue(next);
+          statusRef.current = 'idle';
           setStatus('idle');
         }
       } else if (e.key === 'Backspace') {
-        const next = userResultInput.slice(0, -1);
+        const next = userResultInputRef.current.slice(0, -1);
+        userResultInputRef.current = next;
         setUserResultInput(next);
         updateKeypadValue(next);
+        statusRef.current = 'idle';
         setStatus('idle');
       } else if (e.key === '+' || e.key === '-') {
-        setChosenOp(e.key as '+' | '-');
+        const nextOp = e.key as '+' | '-';
+        chosenOpRef.current = nextOp;
+        setChosenOp(nextOp);
+        statusRef.current = 'idle';
         setStatus('idle');
       } else if (e.key === 'Enter') {
-        if (status === 'correct') nextQuestion();
+        if (statusRef.current === 'correct') nextQuestion();
         else handleCheck();
       }
     };
@@ -433,10 +474,13 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
                             sound.playClick();
                             openKeypad({
                               title: 'Nháp chữ số hàng chục',
-                              value: scratchTens,
+                              value: scratchTensRef.current,
                               maxLength: 1,
                               targetEl: e.currentTarget,
-                              onChange: (val) => setScratchTens(val),
+                              onChange: (val) => {
+                                scratchTensRef.current = val;
+                                setScratchTens(val);
+                              },
                             });
                           }}
                           className="h-11 text-center text-xl font-black rounded-lg border-2 border-amber-400 bg-white text-slate-900 outline-none cursor-pointer"
@@ -453,10 +497,13 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
                             sound.playClick();
                             openKeypad({
                               title: 'Nháp chữ số hàng đơn vị',
-                              value: scratchUnit,
+                              value: scratchUnitRef.current,
                               maxLength: 1,
                               targetEl: e.currentTarget,
-                              onChange: (val) => setScratchUnit(val),
+                              onChange: (val) => {
+                                scratchUnitRef.current = val;
+                                setScratchUnit(val);
+                              },
                             });
                           }}
                           className="h-11 text-center text-xl font-black rounded-lg border-2 border-blue-400 bg-white text-slate-900 outline-none cursor-pointer"
@@ -550,7 +597,9 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
                   type="button"
                   onClick={() => {
                     sound.playClick();
+                    chosenOpRef.current = '+';
                     setChosenOp('+');
+                    statusRef.current = 'idle';
                     setStatus('idle');
                   }}
                   className={`min-w-[44px] min-h-[44px] rounded-xl font-black text-2xl transition-all cursor-pointer border ${
@@ -566,7 +615,9 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
                   type="button"
                   onClick={() => {
                     sound.playClick();
+                    chosenOpRef.current = '-';
                     setChosenOp('-');
+                    statusRef.current = 'idle';
                     setStatus('idle');
                   }}
                   className={`min-w-[44px] min-h-[44px] rounded-xl font-black text-2xl transition-all cursor-pointer border ${
@@ -597,14 +648,20 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
                   sound.playClick();
                   openKeypad({
                     title: 'Kết quả bài toán đố',
-                    value: userResultInput,
+                    value: userResultInputRef.current,
                     maxLength: 3,
                     targetEl: e.currentTarget,
                     onChange: (val) => {
+                      userResultInputRef.current = val;
                       setUserResultInput(val);
+                      statusRef.current = 'idle';
                       setStatus('idle');
                     },
-                    onSubmit: handleCheck,
+                    onSubmit: () => {
+                      if (userResultInputRef.current.trim()) {
+                        handleCheck();
+                      }
+                    },
                   });
                 }}
                 className={`w-24 h-12 rounded-xl border-2 text-center text-2xl font-black transition-all px-2 outline-none cursor-pointer ${
@@ -654,9 +711,13 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
                 <button
                   type="button"
                   onClick={() => {
+                    userResultInputRef.current = '';
+                    chosenOpRef.current = null;
+                    statusRef.current = 'idle';
                     setUserResultInput('');
                     setChosenOp(null);
                     setStatus('idle');
+                    updateKeypadValue('');
                   }}
                   className="min-h-[44px] px-3 py-1.5 text-sm font-bold underline hover:text-rose-900 cursor-pointer"
                 >
@@ -705,22 +766,28 @@ export const ToanDoSection: React.FC<ToanDoSectionProps> = ({ onEarnStar }) => {
 
             <NumberPad
               onNumberClick={(d) => {
-                if (userResultInput.length < 3) {
-                  const next = userResultInput + d;
+                if (userResultInputRef.current.length < 3) {
+                  const next = userResultInputRef.current + d;
+                  userResultInputRef.current = next;
                   setUserResultInput(next);
                   updateKeypadValue(next);
+                  statusRef.current = 'idle';
                   setStatus('idle');
                 }
               }}
               onDelete={() => {
-                const next = userResultInput.slice(0, -1);
+                const next = userResultInputRef.current.slice(0, -1);
+                userResultInputRef.current = next;
                 setUserResultInput(next);
                 updateKeypadValue(next);
+                statusRef.current = 'idle';
                 setStatus('idle');
               }}
               onClear={() => {
+                userResultInputRef.current = '';
                 setUserResultInput('');
                 updateKeypadValue('');
+                statusRef.current = 'idle';
                 setStatus('idle');
               }}
               onSubmit={handleCheck}

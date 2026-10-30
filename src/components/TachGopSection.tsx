@@ -24,6 +24,7 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
   const [inputSplit2, setInputSplit2] = useState<string>('');
   const [inputFinal, setInputFinal] = useState<string>('');
   const [splitAddStatus, setSplitAddStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
+  const [splitAddErrorMsg, setSplitAddErrorMsg] = useState<string>('');
   const [showSplitAddHint, setShowSplitAddHint] = useState<boolean>(false);
 
   const [treeLevel, setTreeLevel] = useState<'mixed' | 'basic' | 'tens'>('mixed');
@@ -37,14 +38,55 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
 
   const [streak, setStreak] = useState<number>(0);
 
+  const activeSlotRef = useRef<'split1' | 'split2' | 'finalResult'>('split1');
+  const inputSplit1Ref = useRef(inputSplit1);
+  const inputSplit2Ref = useRef(inputSplit2);
+  const inputFinalRef = useRef(inputFinal);
+  const splitAddQRef = useRef(splitAddQ);
+  const splitAddStatusRef = useRef(splitAddStatus);
+
+  const treeInputRef = useRef(treeInput);
+  const treeQuestionRef = useRef(treeQuestion);
+  const treeStatusRef = useRef(treeStatus);
+
+  useEffect(() => {
+    activeSlotRef.current = activeSlot;
+    inputSplit1Ref.current = inputSplit1;
+    inputSplit2Ref.current = inputSplit2;
+    inputFinalRef.current = inputFinal;
+    splitAddQRef.current = splitAddQ;
+    splitAddStatusRef.current = splitAddStatus;
+    treeInputRef.current = treeInput;
+    treeQuestionRef.current = treeQuestion;
+    treeStatusRef.current = treeStatus;
+  }, [
+    activeSlot,
+    inputSplit1,
+    inputSplit2,
+    inputFinal,
+    splitAddQ,
+    splitAddStatus,
+    treeInput,
+    treeQuestion,
+    treeStatus,
+  ]);
+
   const nextSplitAddQuestion = (maxNum = maxNumLimit, table = tableSelection) => {
     const q = generateTachSoCongQuaMuoiQuestion({ maxNum, table });
+    splitAddQRef.current = q;
+    inputSplit1Ref.current = '';
+    inputSplit2Ref.current = '';
+    inputFinalRef.current = '';
+    activeSlotRef.current = 'split1';
+    splitAddStatusRef.current = 'idle';
+
     setSplitAddQ(q);
     setInputSplit1('');
     setInputSplit2('');
     setInputFinal('');
     setActiveSlot('split1');
     setSplitAddStatus('idle');
+    setSplitAddErrorMsg('');
     setShowSplitAddHint(false);
     closeKeypad();
   };
@@ -62,28 +104,71 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
   };
 
   const handleCheckSplitAdd = () => {
-    const s1 = parseInt(inputSplit1, 10);
-    const s2 = parseInt(inputSplit2, 10);
-    const res = parseInt(inputFinal, 10);
+    if (splitAddStatusRef.current === 'correct') return;
+
+    const q = splitAddQRef.current;
+    const s1 = parseInt(inputSplit1Ref.current, 10);
+    const s2 = parseInt(inputSplit2Ref.current, 10);
+    const res = parseInt(inputFinalRef.current, 10);
 
     const isCorrect =
-      s1 === splitAddQ.split1 &&
-      s2 === splitAddQ.split2 &&
-      res === splitAddQ.finalResult;
+      s1 === q.split1 &&
+      s2 === q.split2 &&
+      res === q.finalResult;
 
     if (isCorrect) {
       sound.playCorrect();
+      splitAddStatusRef.current = 'correct';
       setSplitAddStatus('correct');
+      setSplitAddErrorMsg('');
       setStreak((s) => s + 1);
       onEarnStar();
     } else {
       sound.playIncorrect();
+      splitAddStatusRef.current = 'wrong';
       setSplitAddStatus('wrong');
+      if (s1 !== q.split1) {
+        setSplitAddErrorMsg(
+          `Chưa đúng rồi! Ở Ô tách 1, ${q.num1} cộng mấy để bằng ${q.roundTen} nhỉ?`
+        );
+      } else if (s2 !== q.split2) {
+        setSplitAddErrorMsg(
+          `Chưa đúng rồi! Tách ${q.num2} gồm ${q.split1} và mấy ở Ô tách 2 nhỉ?`
+        );
+      } else {
+        setSplitAddErrorMsg(
+          `2 ô tách đúng rồi! Bé kiểm tra lại ô Kết quả (${q.roundTen} + ${q.split2} = mấy) nhé!`
+        );
+      }
+    }
+  };
+
+  const handleFloatingSubmitSplitAdd = () => {
+    const s1 = inputSplit1Ref.current.trim();
+    const s2 = inputSplit2Ref.current.trim();
+    const fin = inputFinalRef.current.trim();
+
+    if (s1 && s2 && fin) {
+      handleCheckSplitAdd();
+    } else if (!s1) {
+      activeSlotRef.current = 'split1';
+      setActiveSlot('split1');
+    } else if (!s2) {
+      activeSlotRef.current = 'split2';
+      setActiveSlot('split2');
+    } else {
+      activeSlotRef.current = 'finalResult';
+      setActiveSlot('finalResult');
     }
   };
 
   const nextTreeQuestion = (lvl = treeLevel) => {
-    setTreeQuestion(generateTachGopQuestion(lvl));
+    const q = generateTachGopQuestion(lvl);
+    treeQuestionRef.current = q;
+    treeInputRef.current = '';
+    treeStatusRef.current = 'idle';
+
+    setTreeQuestion(q);
     setTreeInput('');
     setTreeStatus('idle');
     setShowTreeHint(false);
@@ -91,89 +176,124 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
   };
 
   const handleCheckTree = () => {
-    if (!treeInput.trim()) return;
-    const ans = parseInt(treeInput, 10);
-    let expected = treeQuestion.total;
-    if (treeQuestion.missingField === 'partA') expected = treeQuestion.partA;
-    if (treeQuestion.missingField === 'partB') expected = treeQuestion.partB;
+    if (treeStatusRef.current === 'correct') return;
+    const raw = treeInputRef.current.trim();
+    if (!raw) return;
+
+    const q = treeQuestionRef.current;
+    const ans = parseInt(raw, 10);
+    let expected = q.total;
+    if (q.missingField === 'partA') expected = q.partA;
+    if (q.missingField === 'partB') expected = q.partB;
 
     if (ans === expected) {
       sound.playCorrect();
+      treeStatusRef.current = 'correct';
       setTreeStatus('correct');
       setStreak((s) => s + 1);
       onEarnStar();
     } else {
       sound.playIncorrect();
+      treeStatusRef.current = 'wrong';
       setTreeStatus('wrong');
     }
   };
 
-  const activeSlotRef = useRef<'split1' | 'split2' | 'finalResult'>('split1');
-  const inputSplit1Ref = useRef(inputSplit1);
-  const inputSplit2Ref = useRef(inputSplit2);
-  const inputFinalRef = useRef(inputFinal);
-  const treeInputRef = useRef(treeInput);
-
-  useEffect(() => {
-    activeSlotRef.current = activeSlot;
-    inputSplit1Ref.current = inputSplit1;
-    inputSplit2Ref.current = inputSplit2;
-    inputFinalRef.current = inputFinal;
-    treeInputRef.current = treeInput;
-  }, [activeSlot, inputSplit1, inputSplit2, inputFinal, treeInput]);
-
   const handleSplitAddPadDigit = (d: string) => {
     const slot = activeSlotRef.current;
+    const isSingleDigitSplit = splitAddQRef.current.num2 < 10;
+
     if (slot === 'split1') {
       const cur = inputSplit1Ref.current;
-      const next = cur.length < 2 ? cur + d : cur;
+      const next = isSingleDigitSplit ? d : cur.length < 2 ? cur + d : cur;
+      inputSplit1Ref.current = next;
       setInputSplit1(next);
       updateKeypadValue(next);
+      if (isSingleDigitSplit && !inputSplit2Ref.current) {
+        activeSlotRef.current = 'split2';
+        setActiveSlot('split2');
+      }
     } else if (slot === 'split2') {
       const cur = inputSplit2Ref.current;
-      const next = cur.length < 2 ? cur + d : cur;
+      const next = isSingleDigitSplit ? d : cur.length < 2 ? cur + d : cur;
+      inputSplit2Ref.current = next;
       setInputSplit2(next);
       updateKeypadValue(next);
+      if (isSingleDigitSplit && !inputFinalRef.current) {
+        activeSlotRef.current = 'finalResult';
+        setActiveSlot('finalResult');
+      }
     } else {
       const cur = inputFinalRef.current;
       const next = cur.length < 3 ? cur + d : cur;
+      inputFinalRef.current = next;
       setInputFinal(next);
       updateKeypadValue(next);
     }
+    splitAddStatusRef.current = 'idle';
     setSplitAddStatus('idle');
+    setSplitAddErrorMsg('');
   };
 
   const handleSplitAddPadDelete = () => {
     const slot = activeSlotRef.current;
     if (slot === 'split1') {
       const next = inputSplit1Ref.current.slice(0, -1);
+      inputSplit1Ref.current = next;
       setInputSplit1(next);
       updateKeypadValue(next);
     } else if (slot === 'split2') {
-      const next = inputSplit2Ref.current.slice(0, -1);
-      setInputSplit2(next);
-      updateKeypadValue(next);
+      if (inputSplit2Ref.current) {
+        const next = inputSplit2Ref.current.slice(0, -1);
+        inputSplit2Ref.current = next;
+        setInputSplit2(next);
+        updateKeypadValue(next);
+      } else {
+        activeSlotRef.current = 'split1';
+        setActiveSlot('split1');
+        const next = inputSplit1Ref.current.slice(0, -1);
+        inputSplit1Ref.current = next;
+        setInputSplit1(next);
+        updateKeypadValue(next);
+      }
     } else {
-      const next = inputFinalRef.current.slice(0, -1);
-      setInputFinal(next);
-      updateKeypadValue(next);
+      if (inputFinalRef.current) {
+        const next = inputFinalRef.current.slice(0, -1);
+        inputFinalRef.current = next;
+        setInputFinal(next);
+        updateKeypadValue(next);
+      } else {
+        activeSlotRef.current = 'split2';
+        setActiveSlot('split2');
+        const next = inputSplit2Ref.current.slice(0, -1);
+        inputSplit2Ref.current = next;
+        setInputSplit2(next);
+        updateKeypadValue(next);
+      }
     }
+    splitAddStatusRef.current = 'idle';
     setSplitAddStatus('idle');
+    setSplitAddErrorMsg('');
   };
 
   const handleSplitAddPadClear = () => {
     const slot = activeSlotRef.current;
     if (slot === 'split1') {
+      inputSplit1Ref.current = '';
       setInputSplit1('');
       updateKeypadValue('');
     } else if (slot === 'split2') {
+      inputSplit2Ref.current = '';
       setInputSplit2('');
       updateKeypadValue('');
     } else {
+      inputFinalRef.current = '';
       setInputFinal('');
       updateKeypadValue('');
     }
+    splitAddStatusRef.current = 'idle';
     setSplitAddStatus('idle');
+    setSplitAddErrorMsg('');
   };
 
   useEffect(() => {
@@ -182,8 +302,12 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
         if (activeSubMode === 'split-add') {
           handleSplitAddPadDigit(e.key);
         } else if (activeSubMode === 'bond-tree') {
-          if (treeInput.length < 3) {
-            setTreeInput((p) => p + e.key);
+          if (treeInputRef.current.length < 3) {
+            const next = treeInputRef.current + e.key;
+            treeInputRef.current = next;
+            setTreeInput(next);
+            updateKeypadValue(next);
+            treeStatusRef.current = 'idle';
             setTreeStatus('idle');
           }
         }
@@ -191,15 +315,19 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
         if (activeSubMode === 'split-add') {
           handleSplitAddPadDelete();
         } else if (activeSubMode === 'bond-tree') {
-          setTreeInput((p) => p.slice(0, -1));
+          const next = treeInputRef.current.slice(0, -1);
+          treeInputRef.current = next;
+          setTreeInput(next);
+          updateKeypadValue(next);
+          treeStatusRef.current = 'idle';
           setTreeStatus('idle');
         }
       } else if (e.key === 'Enter') {
         if (activeSubMode === 'split-add') {
-          if (splitAddStatus === 'correct') nextSplitAddQuestion();
+          if (splitAddStatusRef.current === 'correct') nextSplitAddQuestion();
           else handleCheckSplitAdd();
         } else if (activeSubMode === 'bond-tree') {
-          if (treeStatus === 'correct') nextTreeQuestion();
+          if (treeStatusRef.current === 'correct') nextTreeQuestion();
           else handleCheckTree();
         }
       }
@@ -229,10 +357,15 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
       maxLength: 3,
       targetEl: el,
       onChange: (next) => {
+        inputFinalRef.current = next;
         setInputFinal(next);
+        splitAddStatusRef.current = 'idle';
         setSplitAddStatus('idle');
+        setSplitAddErrorMsg('');
       },
-      onSubmit: handleCheckSplitAdd,
+      onSubmit: () => {
+        handleFloatingSubmitSplitAdd();
+      },
     });
   };
 
@@ -240,16 +373,22 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
     sound.playClick();
     setActiveSlot('split1');
     activeSlotRef.current = 'split1';
+    const isSingle = splitAddQRef.current.num2 < 10;
     openKeypad({
-      title: `Ô tách 1 (để gộp đủ ${splitAddQ.roundTen})`,
+      title: `Ô tách 1 (để gộp đủ ${splitAddQRef.current.roundTen})`,
       value: inputSplit1Ref.current,
-      maxLength: 2,
+      maxLength: isSingle ? 1 : 2,
       targetEl: el,
       onChange: (next) => {
+        inputSplit1Ref.current = next;
         setInputSplit1(next);
+        splitAddStatusRef.current = 'idle';
         setSplitAddStatus('idle');
+        setSplitAddErrorMsg('');
       },
-      onSubmit: handleCheckSplitAdd,
+      onSubmit: () => {
+        handleFloatingSubmitSplitAdd();
+      },
     });
   };
 
@@ -257,16 +396,22 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
     sound.playClick();
     setActiveSlot('split2');
     activeSlotRef.current = 'split2';
+    const isSingle = splitAddQRef.current.num2 < 10;
     openKeypad({
       title: 'Ô tách 2 (phần còn lại)',
       value: inputSplit2Ref.current,
-      maxLength: 2,
+      maxLength: isSingle ? 1 : 2,
       targetEl: el,
       onChange: (next) => {
+        inputSplit2Ref.current = next;
         setInputSplit2(next);
+        splitAddStatusRef.current = 'idle';
         setSplitAddStatus('idle');
+        setSplitAddErrorMsg('');
       },
-      onSubmit: handleCheckSplitAdd,
+      onSubmit: () => {
+        handleFloatingSubmitSplitAdd();
+      },
     });
   };
 
@@ -278,10 +423,14 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
       maxLength: 3,
       targetEl: el,
       onChange: (next) => {
+        treeInputRef.current = next;
         setTreeInput(next);
+        treeStatusRef.current = 'idle';
         setTreeStatus('idle');
       },
-      onSubmit: handleCheckTree,
+      onSubmit: () => {
+        handleCheckTree();
+      },
     });
   };
 
@@ -593,15 +742,25 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
 
               {splitAddStatus === 'wrong' && (
                 <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-rose-700 text-sm font-medium">
-                  <span>Chưa đúng rồi! Bé kiểm tra lại xem 2 ô tách đã cộng bằng {splitAddQ.num2} chưa nhé!</span>
+                  <span>
+                    {splitAddErrorMsg ||
+                      `Chưa đúng rồi! Bé kiểm tra lại xem 2 ô tách đã cộng bằng ${splitAddQ.num2} chưa nhé!`}
+                  </span>
                   <button
                     type="button"
                     onClick={() => {
+                      inputSplit1Ref.current = '';
+                      inputSplit2Ref.current = '';
+                      inputFinalRef.current = '';
+                      activeSlotRef.current = 'split1';
+                      splitAddStatusRef.current = 'idle';
                       setInputSplit1('');
                       setInputSplit2('');
                       setInputFinal('');
                       setActiveSlot('split1');
                       setSplitAddStatus('idle');
+                      setSplitAddErrorMsg('');
+                      updateKeypadValue('');
                     }}
                     className="min-h-[44px] px-3 py-1.5 text-sm font-bold underline hover:text-rose-900 cursor-pointer"
                   >
@@ -900,8 +1059,11 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
                   <button
                     type="button"
                     onClick={() => {
+                      treeInputRef.current = '';
+                      treeStatusRef.current = 'idle';
                       setTreeInput('');
                       setTreeStatus('idle');
+                      updateKeypadValue('');
                     }}
                     className="min-h-[44px] px-3 py-1.5 text-sm font-bold underline hover:text-rose-900 cursor-pointer"
                   >
@@ -951,19 +1113,25 @@ export const TachGopSection: React.FC<TachGopSectionProps> = ({ onEarnStar }) =>
                 onNumberClick={(d) => {
                   const cur = treeInputRef.current;
                   const next = cur.length < 3 ? cur + d : cur;
+                  treeInputRef.current = next;
                   setTreeInput(next);
                   updateKeypadValue(next);
+                  treeStatusRef.current = 'idle';
                   setTreeStatus('idle');
                 }}
                 onDelete={() => {
                   const next = treeInputRef.current.slice(0, -1);
+                  treeInputRef.current = next;
                   setTreeInput(next);
                   updateKeypadValue(next);
+                  treeStatusRef.current = 'idle';
                   setTreeStatus('idle');
                 }}
                 onClear={() => {
+                  treeInputRef.current = '';
                   setTreeInput('');
                   updateKeypadValue('');
+                  treeStatusRef.current = 'idle';
                   setTreeStatus('idle');
                 }}
                 onSubmit={handleCheckTree}

@@ -293,7 +293,7 @@ export const KiemTraSection: React.FC<KiemTraSectionProps> = ({ onEarnStars }) =
       case 'so-do-cay':
         return !!q.userInput;
       case 'cong-tru-co-nho':
-        return !!q.userUnit && !!q.userTens;
+        return !!q.userUnit && !!q.userTens && !!q.userCarry;
       case 'lien-truoc-sau':
         if (q.data.type === 'both') return !!q.userBefore && !!q.userAfter;
         if (q.data.type === 'before') return !!q.userBefore;
@@ -306,14 +306,20 @@ export const KiemTraSection: React.FC<KiemTraSectionProps> = ({ onEarnStars }) =
     }
   };
 
+  const questionsRef = useRef<ExamQuestion[]>(questions);
+  useEffect(() => {
+    questionsRef.current = questions;
+  }, [questions]);
+
   const handleSubmitExam = () => {
     sound.playVictory();
     closeKeypad();
 
-    const graded = questions.map((q) => ({
+    const graded = questionsRef.current.map((q) => ({
       ...q,
       isCorrect: checkQuestionCorrectness(q),
     }));
+    questionsRef.current = graded;
     setQuestions(graded);
     setIsFinished(true);
 
@@ -355,6 +361,7 @@ export const KiemTraSection: React.FC<KiemTraSectionProps> = ({ onEarnStars }) =
       if (!prev[idx]) return prev;
       const next = [...prev];
       next[idx] = updater(next[idx]);
+      questionsRef.current = next;
       return next;
     });
   };
