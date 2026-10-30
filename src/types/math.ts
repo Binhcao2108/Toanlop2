@@ -2,7 +2,23 @@
  * Type definitions for Grade 2 Math Learning App
  */
 
-export type TopicTab = 'on-tap' | 'tach-gop' | 'cong-tru' | 'lien-truoc-sau' | 'so-sanh' | 'toan-do' | 'kiem-tra';
+export type TopicTab =
+  | 'on-tap'
+  | 'tach-gop'
+  | 'cong-tru'
+  | 'lien-truoc-sau'
+  | 'so-sanh'
+  | 'toan-do'
+  | 'kiem-tra'
+  | 'tai-khoan'
+  | 'quan-tri';
+
+export interface StudentAccount {
+  id: string;
+  pass: string;
+  fullName?: string;
+  isAdmin?: boolean;
+}
 
 export type OnTapCategory =
   | 'tru-qua-10'

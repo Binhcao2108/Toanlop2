@@ -1,6 +1,7 @@
 import React from 'react';
-import { Volume2, VolumeX, Award, Printer, Sparkles, Keyboard } from 'lucide-react';
-import { TopicTab } from '../types/math';
+import { Volume2, VolumeX, Award, Printer, Sparkles, Keyboard, UserCircle2, LogOut } from 'lucide-react';
+import { TopicTab, StudentAccount } from '../types/math';
+import { ScoreSyncStatus } from '../utils/scoreSync';
 import { sound } from '../utils/audio';
 import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
@@ -13,6 +14,10 @@ interface HeaderProps {
   onOpenBadges: () => void;
   onOpenPrint: () => void;
   onOpenQuiz: () => void;
+  currentAccount?: StudentAccount | null;
+  onLogout?: () => void;
+  scoreSyncStatus?: ScoreSyncStatus;
+  pendingStarsCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,9 +29,16 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenBadges,
   onOpenPrint,
   onOpenQuiz,
+  currentAccount,
+  onLogout,
+  scoreSyncStatus = 'saved',
+  pendingStarsCount = 0,
 }) => {
   const { virtualKeypadEnabled, toggleVirtualKeypad } = useVirtualKeypad();
   const navItems: { id: TopicTab; label: string }[] = [
+    ...(currentAccount?.isAdmin
+      ? [{ id: 'quan-tri' as TopicTab, label: '👑 Quản Trị' }]
+      : []),
     { id: 'tach-gop', label: 'Tách Gộp Số' },
     { id: 'cong-tru', label: 'Cộng Trừ Có Nhớ' },
     { id: 'lien-truoc-sau', label: 'Liền Trước & Sau' },
@@ -34,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'toan-do', label: 'Toán Đố Lớp 2' },
     { id: 'on-tap', label: 'Ôn Tập' },
     { id: 'kiem-tra', label: 'Kiểm Tra' },
+    { id: 'tai-khoan', label: 'Tài Khoản' },
   ];
 
   return (
@@ -54,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Zone 2: Desktop navigation links */}
-        <nav className="hidden xl:flex items-center gap-1.5">
+        <nav className="hidden xl:flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = currentTab === item.id;
             return (
@@ -65,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
                   sound.playClick();
                   onSelectTab(item.id);
                 }}
-                className={`min-h-[44px] px-3 py-2 text-sm font-bold rounded-xl transition-colors whitespace-nowrap cursor-pointer ${
+                className={`min-h-[44px] px-2.5 py-2 text-sm font-bold rounded-xl transition-colors whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'bg-amber-100 text-amber-950 border border-amber-300'
                     : 'text-slate-700 hover:text-amber-900 hover:bg-amber-50'
@@ -79,6 +92,51 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 3: Primary actions & kid utilities (all min-h-[44px] & text-sm) */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Account button */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              onSelectTab(currentAccount?.isAdmin ? 'quan-tri' : 'tai-khoan');
+            }}
+            className={`min-h-[44px] px-2.5 py-2 text-sm font-bold rounded-xl border flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+              currentAccount?.isAdmin
+                ? 'bg-indigo-100 hover:bg-indigo-200 text-indigo-950 border-indigo-300'
+                : currentAccount
+                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+                  : 'bg-rose-50 hover:bg-rose-100 text-rose-900 border-rose-300'
+            }`}
+            title={
+              currentAccount
+                ? `Tài khoản: ${currentAccount.id}${currentAccount.isAdmin ? ' (ADMIN)' : ''}`
+                : 'Đăng nhập tài khoản'
+            }
+          >
+            <UserCircle2 className="w-4 h-4 shrink-0" />
+            <span>
+              {currentAccount
+                ? `${currentAccount.id}${currentAccount.isAdmin ? ' (Admin)' : ''}`
+                : 'Đăng nhập'}
+            </span>
+          </button>
+
+          {/* Direct Logout Button when logged in */}
+          {currentAccount && onLogout && (
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onLogout();
+              }}
+              className="min-h-[44px] min-w-[44px] px-2.5 py-2 text-sm font-bold rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors active:scale-95"
+              title="Đăng xuất tài khoản"
+              aria-label="Đăng xuất tài khoản"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span className="hidden md:inline">Đăng xuất</span>
+            </button>
+          )}
+
           {/* Quick Quiz CTA */}
           <button
             type="button"
@@ -107,6 +165,25 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="tabular-nums">{stars}</span>
             <span className="text-amber-500">★</span>
           </button>
+
+          {/* Score Sync Status Chip (text-sm >= 14px) */}
+          {currentAccount && (
+            <span
+              className={`hidden md:inline-flex items-center px-2.5 py-1.5 rounded-xl text-sm font-bold border whitespace-nowrap ${
+                scoreSyncStatus === 'saving'
+                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                  : scoreSyncStatus === 'pending'
+                    ? 'bg-slate-100 text-slate-700 border-slate-300'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+              }`}
+            >
+              {scoreSyncStatus === 'saving'
+                ? 'Đang lưu…'
+                : scoreSyncStatus === 'pending'
+                  ? `Chờ có mạng để lưu (${pendingStarsCount} sao)`
+                  : 'Đã lưu điểm ☁✓'}
+            </span>
+          )}
 
           {/* Print Worksheet */}
           <button
@@ -166,7 +243,24 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Mobile & Tablet sticky navigation tab strip (min-h-[44px], text-sm) */}
-      <div className="flex xl:hidden overflow-x-auto pt-2 pb-1 gap-2 scrollbar-none border-t border-amber-100 mt-1.5">
+      <div className="flex xl:hidden items-center overflow-x-auto pt-2 pb-1 gap-2 scrollbar-none border-t border-amber-100 mt-1.5">
+        {currentAccount && (
+          <span
+            className={`md:hidden inline-flex items-center px-2.5 py-1.5 rounded-xl text-sm font-bold border whitespace-nowrap shrink-0 ${
+              scoreSyncStatus === 'saving'
+                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                : scoreSyncStatus === 'pending'
+                  ? 'bg-slate-100 text-slate-700 border-slate-300'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+            }`}
+          >
+            {scoreSyncStatus === 'saving'
+              ? 'Đang lưu…'
+              : scoreSyncStatus === 'pending'
+                ? `Chờ có mạng để lưu (${pendingStarsCount} sao)`
+                : 'Đã lưu điểm ☁✓'}
+          </span>
+        )}
         {navItems.map((item) => {
           const isActive = currentTab === item.id;
           return (
