@@ -1,7 +1,9 @@
 import React from 'react';
-import { Volume2, VolumeX, Award, Printer, Sparkles, Keyboard, UserCircle2, LogOut } from 'lucide-react';
+import { Volume2, VolumeX, Printer, Sparkles, Keyboard, UserCircle2, LogOut } from 'lucide-react';
 import { TopicTab, StudentAccount } from '../types/math';
 import { ScoreSyncStatus } from '../utils/scoreSync';
+import { getCurrentRankInfo } from '../utils/mathGenerators';
+import { RankIcon } from './RankIcon';
 import { sound } from '../utils/audio';
 import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
@@ -35,6 +37,10 @@ export const Header: React.FC<HeaderProps> = ({
   pendingStarsCount = 0,
 }) => {
   const { virtualKeypadEnabled, toggleVirtualKeypad } = useVirtualKeypad();
+  const rankInfo = getCurrentRankInfo(stars);
+  const currentRankBadge = rankInfo.currentBadge;
+  const activeBadgeId = currentAccount?.isAdmin ? 'b21' : currentRankBadge?.id || 'b0';
+
   const navItems: { id: TopicTab; label: string }[] = [
     ...(currentAccount?.isAdmin
       ? [{ id: 'quan-tri' as TopicTab, label: '👑 Quản Trị' }]
@@ -46,6 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'toan-do', label: 'Toán Đố Lớp 2' },
     { id: 'on-tap', label: 'Ôn Tập' },
     { id: 'kiem-tra', label: 'Kiểm Tra' },
+    { id: 'xep-hang', label: '🏆 Xếp Hạng' },
     { id: 'tai-khoan', label: 'Tài Khoản' },
   ];
 
@@ -92,32 +99,47 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 3: Primary actions & kid utilities (all min-h-[44px] & text-sm) */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Account button */}
+          {/* Account & Rank Emblem button */}
           <button
             type="button"
             onClick={() => {
               sound.playClick();
               onSelectTab(currentAccount?.isAdmin ? 'quan-tri' : 'tai-khoan');
             }}
-            className={`min-h-[44px] px-2.5 py-2 text-sm font-bold rounded-xl border flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+            className={`min-h-[44px] px-2.5 py-1.5 text-sm font-bold rounded-xl border flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-all shadow-2xs ${
               currentAccount?.isAdmin
-                ? 'bg-indigo-100 hover:bg-indigo-200 text-indigo-950 border-indigo-300'
+                ? 'bg-gradient-to-r from-indigo-100 via-purple-100 to-amber-100 hover:from-indigo-200 hover:to-amber-200 text-indigo-950 border-indigo-300'
                 : currentAccount
-                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+                  ? 'bg-gradient-to-r from-emerald-50 to-amber-50/80 hover:from-emerald-100 hover:to-amber-100 text-emerald-950 border-emerald-300'
                   : 'bg-rose-50 hover:bg-rose-100 text-rose-900 border-rose-300'
             }`}
             title={
               currentAccount
-                ? `Tài khoản: ${currentAccount.id}${currentAccount.isAdmin ? ' (ADMIN)' : ''}`
+                ? `Tài khoản: ${currentAccount.id}${
+                    currentAccount.isAdmin
+                      ? ' (ADMIN Tối Thượng)'
+                      : ` • Cấp bậc: ${currentRankBadge?.title || 'Bé Tập Sự'}`
+                  }`
                 : 'Đăng nhập tài khoản'
             }
           >
-            <UserCircle2 className="w-4 h-4 shrink-0" />
-            <span>
-              {currentAccount
-                ? `${currentAccount.id}${currentAccount.isAdmin ? ' (Admin)' : ''}`
-                : 'Đăng nhập'}
-            </span>
+            {currentAccount ? (
+              <RankIcon badgeId={activeBadgeId} size="sm" />
+            ) : (
+              <UserCircle2 className="w-4 h-4 shrink-0" />
+            )}
+            <div className="flex items-center gap-1.5 leading-tight">
+              <span className="font-black text-sm">
+                {currentAccount
+                  ? `${currentAccount.id}${currentAccount.isAdmin ? ' (Admin)' : ''}`
+                  : 'Đăng nhập'}
+              </span>
+              {currentAccount && (
+                <span className="hidden lg:inline text-sm font-extrabold text-amber-800">
+                  • {currentAccount.isAdmin ? 'Tối Thượng' : currentRankBadge?.tier || 'Tập Sự'}
+                </span>
+              )}
+            </div>
           </button>
 
           {/* Direct Logout Button when logged in */}
@@ -151,18 +173,22 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">Thử Thách</span>
           </button>
 
-          {/* Badges Trophy */}
+          {/* Badges Trophy & Rank Crest Button */}
           <button
             type="button"
             onClick={() => {
               sound.playClick();
               onOpenBadges();
             }}
-            className="min-h-[44px] px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl flex items-center gap-1 cursor-pointer transition-colors text-sm font-bold whitespace-nowrap"
-            title="Xem huy hiệu của bé"
+            className="min-h-[44px] px-2.5 py-1.5 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 border-2 border-amber-300 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-sm font-extrabold whitespace-nowrap shadow-xs active:scale-95"
+            title={
+              currentRankBadge
+                ? `Cấp bậc: ${currentRankBadge.title} (${stars} ★) - Bấm để xem 21 icon cấp bậc ngầu đến 2000 ★`
+                : `Xem bảng cấp bậc & huy hiệu của bé (${stars} ★)`
+            }
           >
-            <Award className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="tabular-nums">{stars}</span>
+            <RankIcon badgeId={currentRankBadge?.id || 'b0'} size="sm" />
+            <span className="tabular-nums font-black">{stars}</span>
             <span className="text-amber-500">★</span>
           </button>
 

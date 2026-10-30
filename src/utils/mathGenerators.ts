@@ -769,66 +769,253 @@ export function generateSoSanhQuestion(mode?: 'two-numbers' | 'sort-sequence'): 
 }
 
 /**
- * List of fun animal badges that Grade 2 kids love to unlock!
+ * Hệ thống 21 cấp bậc & huy hiệu siêu ngầu từ 3 ★ đến 2000 ★ tạo hứng khởi cho bé!
  */
 export const INITIAL_BADGES: Badge[] = [
   {
     id: 'badge-1',
-    title: 'Bé Khởi Động',
-    desc: 'Bắt đầu chuyến phiêu lưu toán học và đạt 3 ngôi sao.',
+    title: 'Tân Binh Toán Học',
+    desc: 'Bắt đầu chuyến phiêu lưu toán học kỳ thú và đạt 3 ngôi sao đầu tiên.',
     icon: '🐣',
     unlocked: false,
     requiredStars: 3,
+    tier: 'Khởi Động',
+    tierColor: 'emerald',
   },
   {
     id: 'badge-2',
-    title: 'Bậc Thầy Tách Gộp',
-    desc: 'Hiểu rõ cấu tạo số và tách gộp thành thạo.',
+    title: 'Chiến Binh Ong Chăm Chỉ',
+    desc: 'Hiểu rõ cấu tạo số và tách gộp số thành thạo.',
     icon: '🐝',
     unlocked: false,
     requiredStars: 8,
+    tier: 'Khởi Động',
+    tierColor: 'emerald',
   },
   {
     id: 'badge-3',
-    title: 'Hiệp Sĩ Cộng Nhớ',
-    desc: 'Thực hiện phép tính cộng có nhớ chuẩn xác.',
+    title: 'Hiệp Sĩ Sư Tử Cộng Nhớ',
+    desc: 'Thực hiện phép tính cộng qua 10 và cộng có nhớ chuẩn xác.',
     icon: '🦁',
     unlocked: false,
     requiredStars: 15,
+    tier: 'Hạng Đồng',
+    tierColor: 'amber',
   },
   {
     id: 'badge-4',
-    title: 'Thần Đồng Trừ Nhớ',
-    desc: 'Mượn chục và trừ có nhớ xuất sắc.',
+    title: 'Thần Đồng Cáo Trừ Nhớ',
+    desc: 'Mượn chục và trừ có nhớ xuất sắc, không bao giờ nhầm lẫn.',
     icon: '🦊',
     unlocked: false,
     requiredStars: 25,
+    tier: 'Hạng Đồng',
+    tierColor: 'amber',
   },
   {
     id: 'badge-5',
-    title: 'Bác Lái Tàu Toán Học',
+    title: 'Thuyền Trưởng Đoàn Tàu Số',
     desc: 'Chinh phục số liền trước và liền sau từ 1 đến 150.',
     icon: '🚂',
     unlocked: false,
     requiredStars: 35,
+    tier: 'Hạng Đồng',
+    tierColor: 'amber',
   },
   {
     id: 'badge-6',
-    title: 'Nhà Thám Hiểm Dãy Số',
+    title: 'Phi Hành Gia Dãy Số',
     desc: 'Sắp xếp dãy số thần tốc từ bé đến lớn và lớn đến bé.',
     icon: '🚀',
     unlocked: false,
     requiredStars: 45,
+    tier: 'Hạng Bạc',
+    tierColor: 'sky',
   },
   {
     id: 'badge-7',
-    title: 'Đại Trí Tuệ Lớp 2',
-    desc: 'Đạt danh hiệu Thủ khoa Toán lớp 2 với 60 ngôi sao.',
+    title: 'Thủ Khoa Toán Lớp 2',
+    desc: 'Đạt danh hiệu Thủ khoa Toán lớp 2 với cột mốc 60 ngôi sao.',
     icon: '👑',
     unlocked: false,
     requiredStars: 60,
+    tier: 'Hạng Bạc',
+    tierColor: 'sky',
+  },
+  {
+    id: 'badge-8',
+    title: 'Hộ Vệ Vương Quốc Số',
+    desc: 'Giải các bài toán có lời văn thông minh và bảo vệ Vương Quốc Toán Học.',
+    icon: '🛡️',
+    unlocked: false,
+    requiredStars: 85,
+    tier: 'Hạng Bạc',
+    tierColor: 'sky',
+  },
+  {
+    id: 'badge-9',
+    title: 'Kiếm Sư Tia Chớp',
+    desc: 'Tính nhẩm nhanh như tia chớp mọi phép cộng trừ trong phạm vi 100.',
+    icon: '⚔️',
+    unlocked: false,
+    requiredStars: 120,
+    tier: 'Hạng Vàng',
+    tierColor: 'yellow',
+  },
+  {
+    id: 'badge-10',
+    title: 'Đại Bàng Hoàng Kim',
+    desc: 'Đôi mắt tinh anh nhìn thấu mọi quy luật số học hóc búa nhất.',
+    icon: '🦅',
+    unlocked: false,
+    requiredStars: 160,
+    tier: 'Hạng Vàng',
+    tierColor: 'yellow',
+  },
+  {
+    id: 'badge-11',
+    title: 'Kỳ Lân Ánh Sáng',
+    desc: 'Tỏa sáng rực rỡ với chuỗi bài tập đúng liên tiếp đáng kinh ngạc.',
+    icon: '🦄',
+    unlocked: false,
+    requiredStars: 220,
+    tier: 'Hạng Vàng',
+    tierColor: 'yellow',
+  },
+  {
+    id: 'badge-12',
+    title: 'Pháp Sư Tinh Thông',
+    desc: 'Nắm giữ phép thuật biến hóa các con số kỳ diệu với 300 ngôi sao.',
+    icon: '🧙‍♂️',
+    unlocked: false,
+    requiredStars: 300,
+    tier: 'Bạch Kim',
+    tierColor: 'teal',
+  },
+  {
+    id: 'badge-13',
+    title: 'Siêu Robot Trí Tuệ',
+    desc: 'Bộ não siêu việt xử lý mọi phép tính phức tạp chỉ trong chớp mắt.',
+    icon: '🤖',
+    unlocked: false,
+    requiredStars: 400,
+    tier: 'Bạch Kim',
+    tierColor: 'teal',
+  },
+  {
+    id: 'badge-14',
+    title: 'Chiến Long Bạch Kim',
+    desc: 'Sức mạnh rồng thiêng vượt qua mọi bài kiểm tra thử thách.',
+    icon: '🐉',
+    unlocked: false,
+    requiredStars: 520,
+    tier: 'Bạch Kim',
+    tierColor: 'teal',
+  },
+  {
+    id: 'badge-15',
+    title: 'Chiến Thần Sấm Sét',
+    desc: 'Tốc độ và sự chính xác tuyệt đối khiến mọi đối thủ ngưỡng mộ.',
+    icon: '⚡',
+    unlocked: false,
+    requiredStars: 650,
+    tier: 'Kim Cương',
+    tierColor: 'indigo',
+  },
+  {
+    id: 'badge-16',
+    title: 'Vương Giả Kim Cương',
+    desc: 'Ý chí bền bỉ tỏa sáng lấp lánh như viên kim cương quý giá nhất.',
+    icon: '💎',
+    unlocked: false,
+    requiredStars: 800,
+    tier: 'Kim Cương',
+    tierColor: 'indigo',
+  },
+  {
+    id: 'badge-17',
+    title: 'Siêu Sao Ngàn Năm',
+    desc: 'Chạm cột mốc lịch sử 1000 ngôi sao vàng chói lọi!',
+    icon: '🌟',
+    unlocked: false,
+    requiredStars: 1000,
+    tier: 'Cao Thủ',
+    tierColor: 'purple',
+  },
+  {
+    id: 'badge-18',
+    title: 'Phượng Hoàng Lửa Bất Bại',
+    desc: 'Đôi cánh rực lửa bay cao trên đỉnh vinh quang Toán học.',
+    icon: '🔥',
+    unlocked: false,
+    requiredStars: 1200,
+    tier: 'Cao Thủ',
+    tierColor: 'purple',
+  },
+  {
+    id: 'badge-19',
+    title: 'Thống Lĩnh Ngân Hà',
+    desc: 'Làm chủ các vì sao và khám phá những hành tinh tri thức mới.',
+    icon: '🌌',
+    unlocked: false,
+    requiredStars: 1450,
+    tier: 'Thần Thoại',
+    tierColor: 'rose',
+  },
+  {
+    id: 'badge-20',
+    title: 'Chí Tôn Vũ Trụ',
+    desc: 'Sức mạnh trí tuệ siêu phàm vang danh khắp dải ngân hà.',
+    icon: '🪐',
+    unlocked: false,
+    requiredStars: 1700,
+    tier: 'Thần Thoại',
+    tierColor: 'rose',
+  },
+  {
+    id: 'badge-21',
+    title: 'Huyền Thoại Vũ Trụ 2000 Sao',
+    desc: 'Đỉnh cao tối thượng! Bé chính thức trở thành Đại Huyền Thoại Toán Học 2000 Sao!',
+    icon: '🏆',
+    unlocked: false,
+    requiredStars: 2000,
+    tier: 'Huyền Thoại',
+    tierColor: 'fuchsia',
   },
 ];
+
+export function getCurrentRankInfo(stars: number, badges: Badge[] = INITIAL_BADGES) {
+  const sorted = [...badges].sort((a, b) => a.requiredStars - b.requiredStars);
+  let currentBadge: Badge | null = null;
+  let nextBadge: Badge | null = null;
+
+  for (const b of sorted) {
+    if (stars >= b.requiredStars) {
+      currentBadge = b;
+    } else if (!nextBadge) {
+      nextBadge = b;
+    }
+  }
+
+  const prevTarget = currentBadge ? currentBadge.requiredStars : 0;
+  const nextTarget = nextBadge ? nextBadge.requiredStars : 2000;
+  const progressToNext = nextBadge
+    ? Math.min(
+        100,
+        Math.max(
+          0,
+          Math.round(((stars - prevTarget) / Math.max(1, nextTarget - prevTarget)) * 100)
+        )
+      )
+    : 100;
+
+  return {
+    currentBadge,
+    nextBadge,
+    progressToNext,
+    starsNeededForNext: nextBadge ? Math.max(0, nextBadge.requiredStars - stars) : 0,
+  };
+}
 
 // ============================================================================
 // BƯỚC 2: SINH ĐỀ TRẮC NGHIỆM "ÔN TẬP" (10 CÂU NGẪU NHIÊN ĐỦ 7 DẠNG TOÁN LỚP 2)

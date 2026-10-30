@@ -18,6 +18,8 @@ import {
 import { StudentAccount, Badge } from '../types/math';
 import { REGISTER_FORM_URL, matchAdminAccount } from '../utils/driveAccounts';
 import { ScoreSyncStatus } from '../utils/scoreSync';
+import { getCurrentRankInfo } from '../utils/mathGenerators';
+import { RankIcon } from './RankIcon';
 import { sound } from '../utils/audio';
 
 interface TaiKhoanSectionProps {
@@ -59,6 +61,8 @@ export const TaiKhoanSection: React.FC<TaiKhoanSectionProps> = ({
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   const unlockedCount = badges.filter((b) => stars >= b.requiredStars).length;
+  const { currentBadge, nextBadge, progressToNext, starsNeededForNext } =
+    getCurrentRankInfo(stars, badges);
 
   const findMatchingAccount = (
     list: StudentAccount[],
@@ -268,8 +272,11 @@ export const TaiKhoanSection: React.FC<TaiKhoanSectionProps> = ({
         <div className="bg-white rounded-3xl border-2 border-emerald-300 shadow-md overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-white flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black">
-                👦
+              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
+                <RankIcon
+                  badgeId={currentAccount.isAdmin ? 'b21' : currentBadge?.id || 'b0'}
+                  size="md"
+                />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -312,6 +319,49 @@ export const TaiKhoanSection: React.FC<TaiKhoanSectionProps> = ({
               </button>
             )}
 
+            {/* Current Rank Banner */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 border-2 border-amber-300 space-y-2.5">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 flex items-center justify-center shadow-sm border-2 border-amber-300 shrink-0">
+                    <RankIcon badgeId={currentBadge?.id || 'b0'} size="lg" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-200 text-amber-950">
+                        {currentBadge?.tier || 'Tập Sự'}
+                      </span>
+                      <span className="text-xs font-bold text-slate-500">
+                        Cấp bậc hiện tại
+                      </span>
+                    </div>
+                    <div className="text-lg sm:text-xl font-black text-slate-900">
+                      {currentBadge ? currentBadge.title : 'Bé Tập Sự Toán Học'}
+                    </div>
+                  </div>
+                </div>
+                {nextBadge && (
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-slate-500">Lên hạng tiếp theo</div>
+                    <div className="text-sm font-black text-amber-800 flex items-center justify-end gap-1.5 mt-0.5">
+                      <RankIcon badgeId={nextBadge.id} size="xs" />
+                      <span>
+                        {nextBadge.title} (còn {starsNeededForNext} ★)
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {nextBadge && (
+                <div className="w-full h-2.5 bg-white rounded-full overflow-hidden border border-amber-200">
+                  <div
+                    style={{ width: `${progressToNext}%` }}
+                    className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 rounded-full transition-all duration-500"
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-400 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -328,7 +378,7 @@ export const TaiKhoanSection: React.FC<TaiKhoanSectionProps> = ({
                   <Award className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-indigo-900">Huy hiệu đạt được</div>
+                  <div className="text-sm font-bold text-indigo-900">Cấp bậc đạt được</div>
                   <div className="text-2xl font-black text-indigo-700">
                     {unlockedCount} / {badges.length}
                   </div>

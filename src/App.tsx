@@ -9,6 +9,8 @@ import { OnTapSection } from './components/OnTapSection';
 import { KiemTraSection } from './components/KiemTraSection';
 import { TaiKhoanSection } from './components/TaiKhoanSection';
 import { AdminSection } from './components/AdminSection';
+import { XepHangSection } from './components/XepHangSection';
+import { RankIcon } from './components/RankIcon';
 import { QuizModal } from './components/QuizModal';
 import { BadgesModal } from './components/BadgesModal';
 import { PrintWorksheetModal } from './components/PrintWorksheetModal';
@@ -48,6 +50,7 @@ import {
   UserCircle2,
   LogOut,
   ShieldCheck,
+  Trophy,
 } from 'lucide-react';
 import { VirtualKeypadProvider } from './context/VirtualKeypadContext';
 import { FloatingVirtualKeypad } from './components/FloatingVirtualKeypad';
@@ -500,6 +503,13 @@ export default function App() {
       color: 'bg-amber-100/70 border-amber-300 text-amber-900',
     },
     {
+      id: 'xep-hang',
+      title: 'Bảng Xếp Hạng',
+      sub: 'Top các siêu sao có điểm cao nhất toàn trường',
+      icon: <Trophy className="w-5 h-5 text-orange-700" />,
+      color: 'bg-orange-100/80 border-orange-300 text-orange-900',
+    },
+    {
       id: 'tai-khoan',
       title: 'Tài Khoản',
       sub: 'Quản lý tài khoản & thành tích học tập của bé',
@@ -573,7 +583,7 @@ export default function App() {
               </div>
 
               {/* Topic Select Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2.5">
                 {topicCards.map((card) => {
                   const isCurrent = currentTab === card.id;
                   return (
@@ -613,9 +623,22 @@ export default function App() {
             </section>
           )}
 
-          {/* Dynamic Topic Workspace (Requires login to do exercises, or shows TaiKhoanSection) */}
+          {/* Dynamic Topic Workspace (Requires login to do exercises, or shows XepHangSection / TaiKhoanSection) */}
           <section>
-            {!currentAccount || currentTab === 'tai-khoan' ? (
+            {currentTab === 'xep-hang' ? (
+              <XepHangSection
+                accounts={accounts}
+                currentAccount={currentAccount}
+                currentUserStars={stars}
+                lastSyncTime={lastSyncTime}
+                isSyncing={isSyncingDrive}
+                onSyncDrive={handleSyncDrive}
+                onOpenBadges={() => setIsBadgesOpen(true)}
+                onStartLearning={() =>
+                  setCurrentTab(currentAccount ? 'tach-gop' : 'tai-khoan')
+                }
+              />
+            ) : !currentAccount || currentTab === 'tai-khoan' ? (
               <TaiKhoanSection
                 currentAccount={currentAccount}
                 accounts={accounts}
@@ -688,12 +711,10 @@ export default function App() {
         {/* Floating Badge Notification */}
         {unlockedNotification && (
           <div className="fixed bottom-6 right-6 z-50 bg-white border-2 border-amber-400 rounded-2xl p-4 shadow-xl flex items-center gap-3 animate-pop max-w-sm">
-            <div className="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center text-2xl shadow-sm">
-              {unlockedNotification.icon}
-            </div>
+            <RankIcon badgeId={unlockedNotification.id} size="md" />
             <div>
               <span className="text-sm font-bold text-amber-700 uppercase tracking-wide">
-                🎉 Mở khóa huy hiệu mới!
+                🎉 Thăng cấp huy hiệu mới!
               </span>
               <h4 className="font-black text-base text-slate-900">
                 {unlockedNotification.title}

@@ -10,6 +10,7 @@ export type TopicTab =
   | 'so-sanh'
   | 'toan-do'
   | 'kiem-tra'
+  | 'xep-hang'
   | 'tai-khoan'
   | 'quan-tri';
 
@@ -142,6 +143,8 @@ export interface Badge {
   icon: string;
   unlocked: boolean;
   requiredStars: number;
+  tier?: string;
+  tierColor?: string;
 }
 
 export interface UserProgress {
