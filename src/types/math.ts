@@ -2,6 +2,8 @@
  * Type definitions for Grade 2 Math Learning App
  */
 
+export type SubjectMode = 'toan' | 'tieng-viet';
+
 export type TopicTab =
   | 'on-tap'
   | 'tach-gop'

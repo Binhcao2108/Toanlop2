@@ -5,7 +5,7 @@ import { CongTruCoNhoSection } from './components/CongTruCoNhoSection';
 import { LienTruocLienSauSection } from './components/LienTruocLienSauSection';
 import { SoSanhDaySoSection } from './components/SoSanhDaySoSection';
 import { ToanDoSection } from './components/ToanDoSection';
-import { TiengVietSection } from './components/TiengVietSection';
+import { TiengVietSection, TIENG_VIET_WORKSHEETS } from './components/TiengVietSection';
 import { OnTapSection } from './components/OnTapSection';
 import { KiemTraSection } from './components/KiemTraSection';
 import { TaiKhoanSection } from './components/TaiKhoanSection';
@@ -15,7 +15,7 @@ import { RankIcon } from './components/RankIcon';
 import { QuizModal } from './components/QuizModal';
 import { BadgesModal } from './components/BadgesModal';
 import { PrintWorksheetModal } from './components/PrintWorksheetModal';
-import { TopicTab, Badge, StudentAccount } from './types/math';
+import { TopicTab, Badge, StudentAccount, SubjectMode } from './types/math';
 import { INITIAL_BADGES } from './utils/mathGenerators';
 import {
   getSavedAccounts,
@@ -41,6 +41,7 @@ import { sound } from './utils/audio';
 import confetti from 'canvas-confetti';
 import {
   BookOpen,
+  BookOpenText,
   Calculator,
   Sparkles,
   Train,
@@ -64,6 +65,10 @@ export default function App() {
   const [lastSyncTime, setLastSyncTime] = useState<string>(() => getLastSyncTime());
   const [isSyncingDrive, setIsSyncingDrive] = useState<boolean>(false);
 
+  const [activeSubject, setActiveSubject] = useState<SubjectMode>('toan');
+  const [selectedTvWorksheetId, setSelectedTvWorksheetId] = useState<string>(
+    TIENG_VIET_WORKSHEETS[0].id
+  );
   const [currentTab, setCurrentTab] = useState<TopicTab>(() =>
     getCurrentLoggedInAccount()?.isAdmin ? 'quan-tri' : 'tach-gop'
   );
@@ -436,94 +441,187 @@ export default function App() {
       ? 'pending'
       : 'saved';
 
-  const topicCards: {
-    id: TopicTab;
+  const handleSelectSubject = (subject: SubjectMode) => {
+    setActiveSubject(subject);
+    if (subject === 'tieng-viet') {
+      setCurrentTab('tieng-viet');
+    } else if (currentTab === 'tieng-viet') {
+      setCurrentTab('tach-gop');
+    }
+  };
+
+  const handleSelectTab = (tab: TopicTab) => {
+    setCurrentTab(tab);
+    if (tab === 'tieng-viet') {
+      setActiveSubject('tieng-viet');
+    } else if (
+      tab === 'tach-gop' ||
+      tab === 'cong-tru' ||
+      tab === 'lien-truoc-sau' ||
+      tab === 'so-sanh' ||
+      tab === 'toan-do' ||
+      tab === 'on-tap' ||
+      tab === 'kiem-tra'
+    ) {
+      setActiveSubject('toan');
+    }
+  };
+
+  const adminCards: {
+    key: string;
     title: string;
     sub: string;
     icon: React.ReactNode;
     color: string;
+    isCurrent: boolean;
+    onClick: () => void;
+  }[] = currentAccount?.isAdmin
+    ? [
+        {
+          key: 'quan-tri',
+          title: 'Quản Trị Admin',
+          sub: 'Link đăng ký, quản lý & tổng số tài khoản hiện có',
+          icon: <ShieldCheck className="w-5 h-5 text-indigo-700" />,
+          color: 'bg-indigo-100/80 border-indigo-300 text-indigo-900',
+          isCurrent: currentTab === 'quan-tri',
+          onClick: () => handleSelectTab('quan-tri'),
+        },
+      ]
+    : [];
+
+  const mathCards: {
+    key: string;
+    title: string;
+    sub: string;
+    icon: React.ReactNode;
+    color: string;
+    isCurrent: boolean;
+    onClick: () => void;
   }[] = [
-    ...(currentAccount?.isAdmin
-      ? [
-          {
-            id: 'quan-tri' as TopicTab,
-            title: 'Quản Trị Admin',
-            sub: 'Link đăng ký, quản lý & tổng số tài khoản hiện có',
-            icon: <ShieldCheck className="w-5 h-5 text-indigo-700" />,
-            color: 'bg-indigo-100/80 border-indigo-300 text-indigo-900',
-          },
-        ]
-      : []),
     {
-      id: 'tach-gop',
+      key: 'tach-gop',
       title: 'Tách Gộp Số',
       sub: 'Sơ đồ tách gộp chuẩn SGK & phòng khám phá',
       icon: <Layers className="w-5 h-5 text-amber-700" />,
       color: 'bg-amber-100/70 border-amber-300 text-amber-900',
+      isCurrent: currentTab === 'tach-gop',
+      onClick: () => handleSelectTab('tach-gop'),
     },
     {
-      id: 'cong-tru',
+      key: 'cong-tru',
       title: 'Cộng Trừ Có Nhớ',
       sub: 'Đặt tính cột dọc phạm vi 100 & que tính',
       icon: <Calculator className="w-5 h-5 text-rose-700" />,
       color: 'bg-rose-100/70 border-rose-300 text-rose-900',
+      isCurrent: currentTab === 'cong-tru',
+      onClick: () => handleSelectTab('cong-tru'),
     },
     {
-      id: 'lien-truoc-sau',
+      key: 'lien-truoc-sau',
       title: 'Số Liền Trước & Sau',
       sub: 'Đoàn tàu toán học 1 - 150 & tia số trực quan',
       icon: <Train className="w-5 h-5 text-indigo-700" />,
       color: 'bg-indigo-100/70 border-indigo-300 text-indigo-900',
+      isCurrent: currentTab === 'lien-truoc-sau',
+      onClick: () => handleSelectTab('lien-truoc-sau'),
     },
     {
-      id: 'so-sanh',
+      key: 'so-sanh',
       title: 'So Sánh Dãy Số',
       sub: 'Cân bập bênh & sắp xếp từ bé đến lớn',
       icon: <Scale className="w-5 h-5 text-emerald-700" />,
       color: 'bg-emerald-100/70 border-emerald-300 text-emerald-900',
+      isCurrent: currentTab === 'so-sanh',
+      onClick: () => handleSelectTab('so-sanh'),
     },
     {
-      id: 'toan-do',
+      key: 'toan-do',
       title: 'Toán Đố Lớp 2',
       sub: 'Bài toán có lời văn & sơ đồ đoạn thẳng',
       icon: <BookOpen className="w-5 h-5 text-indigo-700" />,
       color: 'bg-indigo-100/70 border-indigo-300 text-indigo-900',
+      isCurrent: currentTab === 'toan-do',
+      onClick: () => handleSelectTab('toan-do'),
     },
     {
-      id: 'tieng-viet',
-      title: 'Tiếng Việt Lớp 2',
-      sub: 'Đọc hiểu Những Ngày Giáp Tết & Luyện từ câu',
-      icon: <BookOpen className="w-5 h-5 text-rose-700" />,
-      color: 'bg-rose-100/70 border-rose-300 text-rose-900',
-    },
-    {
-      id: 'on-tap',
-      title: 'Ôn Tập',
+      key: 'on-tap',
+      title: 'Ôn Tập Toán',
       sub: 'Đề trắc nghiệm 10 câu tự sinh đủ 7 dạng toán',
       icon: <ClipboardCheck className="w-5 h-5 text-teal-700" />,
       color: 'bg-teal-100/70 border-teal-300 text-teal-900',
+      isCurrent: currentTab === 'on-tap',
+      onClick: () => handleSelectTab('on-tap'),
     },
     {
-      id: 'kiem-tra',
-      title: 'Kiểm Tra Tổng Hợp',
+      key: 'kiem-tra',
+      title: 'Kiểm Tra Toán',
       sub: 'Đề thi 10 - 15 câu tổng hợp đầy đủ 5 phần',
       icon: <GraduationCap className="w-5 h-5 text-amber-700" />,
       color: 'bg-amber-100/70 border-amber-300 text-amber-900',
+      isCurrent: currentTab === 'kiem-tra',
+      onClick: () => handleSelectTab('kiem-tra'),
     },
+  ];
+
+  const tiengVietCards: {
+    key: string;
+    title: string;
+    sub: string;
+    icon: React.ReactNode;
+    color: string;
+    isCurrent: boolean;
+    onClick: () => void;
+  }[] = TIENG_VIET_WORKSHEETS.map((ws, idx) => ({
+    key: `tv-${ws.id}`,
+    title: ws.shortTitle,
+    sub: `${ws.readingTitle} (${ws.author}) • 10 câu (+1 ★/câu)`,
+    icon: <BookOpenText className="w-5 h-5 text-rose-700" />,
+    color:
+      idx % 3 === 0
+        ? 'bg-rose-100/70 border-rose-300 text-rose-900'
+        : idx % 3 === 1
+          ? 'bg-amber-100/70 border-amber-300 text-amber-900'
+          : 'bg-emerald-100/70 border-emerald-300 text-emerald-900',
+    isCurrent: currentTab === 'tieng-viet' && selectedTvWorksheetId === ws.id,
+    onClick: () => {
+      setSelectedTvWorksheetId(ws.id);
+      handleSelectTab('tieng-viet');
+    },
+  }));
+
+  const utilityCards: {
+    key: string;
+    title: string;
+    sub: string;
+    icon: React.ReactNode;
+    color: string;
+    isCurrent: boolean;
+    onClick: () => void;
+  }[] = [
     {
-      id: 'xep-hang',
+      key: 'xep-hang',
       title: 'Bảng Xếp Hạng',
       sub: 'Top các siêu sao có điểm cao nhất toàn trường',
       icon: <Trophy className="w-5 h-5 text-orange-700" />,
       color: 'bg-orange-100/80 border-orange-300 text-orange-900',
+      isCurrent: currentTab === 'xep-hang',
+      onClick: () => handleSelectTab('xep-hang'),
     },
     {
-      id: 'tai-khoan',
+      key: 'tai-khoan',
       title: 'Tài Khoản',
       sub: 'Quản lý tài khoản & thành tích học tập của bé',
       icon: <UserCircle2 className="w-5 h-5 text-blue-700" />,
       color: 'bg-blue-100/70 border-blue-300 text-blue-900',
+      isCurrent: currentTab === 'tai-khoan',
+      onClick: () => handleSelectTab('tai-khoan'),
     },
+  ];
+
+  const topicCards = [
+    ...adminCards,
+    ...(activeSubject === 'toan' ? mathCards : tiengVietCards),
+    ...utilityCards,
   ];
 
   return (
@@ -531,8 +629,15 @@ export default function App() {
       <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-amber-50/60 via-amber-50/20 to-orange-50/30 text-slate-800 flex flex-col font-sans">
         {/* Top Bar Header */}
         <Header
+          activeSubject={activeSubject}
+          onSelectSubject={handleSelectSubject}
           currentTab={currentTab}
-          onSelectTab={setCurrentTab}
+          onSelectTab={handleSelectTab}
+          selectedTvWorksheetId={selectedTvWorksheetId}
+          onSelectTvWorksheet={(wsId) => {
+            setSelectedTvWorksheetId(wsId);
+            handleSelectTab('tieng-viet');
+          }}
           stars={stars}
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
@@ -547,34 +652,75 @@ export default function App() {
 
         {/* Main Container */}
         <main className="flex-1 max-w-6xl w-full mx-auto px-2.5 sm:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6">
-          {/* Welcome & Topic Hub Cards: Hidden on mobile so exercise appears immediately in the first viewport */}
+          {/* Welcome & Subject Hub Cards: Hidden on mobile so exercise appears immediately in the first viewport */}
           {currentAccount && (
-            <section className="hidden lg:block bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-6 shadow-xs">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+            <section className="hidden lg:block bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-6 shadow-xs space-y-4">
+              {/* Top Row: Greeting + Subject Switcher + Quick Actions */}
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-4 border-b border-amber-100">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xl">👋</span>
                     <h1 className="text-xl sm:text-2xl font-black text-amber-950 tracking-tight">
-                      Chào bé {currentAccount.id}! Cùng làm toán lớp 2 thật giỏi nhé!
+                      Chào bé {currentAccount.id}! Cùng học{' '}
+                      {activeSubject === 'tieng-viet' ? 'Môn Tiếng Việt' : 'Môn Toán'} lớp 2 thật
+                      giỏi nhé!
                     </h1>
                   </div>
                   <p className="text-sm text-slate-600">
-                    Lựa chọn một chủ đề bên dưới để luyện tập với hình ảnh trực quan sinh động:
+                    {activeSubject === 'tieng-viet'
+                      ? 'Chọn 1 trong 10 đề đọc hiểu & luyện từ câu bên dưới (mỗi câu đúng +1 ★):'
+                      : 'Chọn 1 chủ đề Toán lớp 2 bên dưới để luyện tập với hình ảnh trực quan sinh động:'}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      setIsQuizOpen(true);
-                    }}
-                    className="min-h-[44px] px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 active:scale-95 text-white font-bold text-sm rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-transform"
-                  >
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Thử Thách 10 Câu</span>
-                  </button>
+                {/* Big 2-Subject Switcher in Hub */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center p-1.5 rounded-2xl bg-amber-100/80 border border-amber-300">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        handleSelectSubject('toan');
+                      }}
+                      className={`min-h-[42px] px-4 py-2 rounded-xl font-black text-sm flex items-center gap-2 cursor-pointer transition-all ${
+                        activeSubject === 'toan'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm'
+                          : 'text-amber-950 hover:bg-white/70'
+                      }`}
+                    >
+                      <Calculator className="w-4 h-4 shrink-0" />
+                      <span>Môn Toán (7 Chủ đề)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        handleSelectSubject('tieng-viet');
+                      }}
+                      className={`min-h-[42px] px-4 py-2 rounded-xl font-black text-sm flex items-center gap-2 cursor-pointer transition-all ${
+                        activeSubject === 'tieng-viet'
+                          ? 'bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-sm'
+                          : 'text-amber-950 hover:bg-white/70'
+                      }`}
+                    >
+                      <BookOpenText className="w-4 h-4 shrink-0" />
+                      <span>Môn Tiếng Việt (10 Đề)</span>
+                    </button>
+                  </div>
+
+                  {activeSubject === 'toan' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setIsQuizOpen(true);
+                      }}
+                      className="min-h-[44px] px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 active:scale-95 text-white font-bold text-sm rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-transform"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>Thử Thách 10 Câu</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -590,21 +736,22 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Topic Select Cards */}
+              {/* Topic Select Cards for Active Subject */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {topicCards.map((card) => {
-                  const isCurrent = currentTab === card.id;
                   return (
                     <button
-                      key={card.id}
+                      key={card.key}
                       type="button"
                       onClick={() => {
                         sound.playClick();
-                        setCurrentTab(card.id);
+                        card.onClick();
                       }}
                       className={`min-h-[44px] p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative group flex flex-col justify-between ${
-                        isCurrent
-                          ? 'bg-amber-400/20 border-amber-500 shadow-md ring-2 ring-amber-400'
+                        card.isCurrent
+                          ? activeSubject === 'tieng-viet'
+                            ? 'bg-rose-400/20 border-rose-500 shadow-md ring-2 ring-rose-400'
+                            : 'bg-amber-400/20 border-amber-500 shadow-md ring-2 ring-amber-400'
                           : 'bg-white hover:bg-amber-50/50 border-slate-200 hover:border-amber-300'
                       }`}
                     >
@@ -612,8 +759,12 @@ export default function App() {
                         <div className={`p-2 rounded-xl ${card.color} shadow-xs`}>
                           {card.icon}
                         </div>
-                        {isCurrent && (
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                        {card.isCurrent && (
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full animate-ping ${
+                              activeSubject === 'tieng-viet' ? 'bg-rose-500' : 'bg-amber-500'
+                            }`}
+                          />
                         )}
                       </div>
                       <div>
@@ -643,7 +794,13 @@ export default function App() {
                 onSyncDrive={handleSyncDrive}
                 onOpenBadges={() => setIsBadgesOpen(true)}
                 onStartLearning={() =>
-                  setCurrentTab(currentAccount ? 'tach-gop' : 'tai-khoan')
+                  handleSelectTab(
+                    currentAccount
+                      ? activeSubject === 'tieng-viet'
+                        ? 'tieng-viet'
+                        : 'tach-gop'
+                      : 'tai-khoan'
+                  )
                 }
               />
             ) : !currentAccount || currentTab === 'tai-khoan' ? (
@@ -657,9 +814,11 @@ export default function App() {
                 onLogin={handleLogin}
                 onLogout={handleLogout}
                 onSyncDrive={handleSyncDrive}
-                onStartLearning={() => setCurrentTab('tach-gop')}
+                onStartLearning={() =>
+                  handleSelectTab(activeSubject === 'tieng-viet' ? 'tieng-viet' : 'tach-gop')
+                }
                 onOpenAdmin={
-                  currentAccount?.isAdmin ? () => setCurrentTab('quan-tri') : undefined
+                  currentAccount?.isAdmin ? () => handleSelectTab('quan-tri') : undefined
                 }
                 scoreSyncStatus={scoreSyncStatus}
                 pendingStarsCount={pendingStarsCount}
@@ -672,7 +831,9 @@ export default function App() {
                 lastSyncTime={lastSyncTime}
                 isSyncing={isSyncingDrive}
                 onSyncDrive={handleSyncDrive}
-                onStartLearning={() => setCurrentTab('tach-gop')}
+                onStartLearning={() =>
+                  handleSelectTab(activeSubject === 'tieng-viet' ? 'tieng-viet' : 'tach-gop')
+                }
                 onLogout={handleLogout}
               />
             ) : (
@@ -698,7 +859,11 @@ export default function App() {
                 )}
 
                 {currentTab === 'tieng-viet' && (
-                  <TiengVietSection onEarnStar={() => handleEarnStar(1)} />
+                  <TiengVietSection
+                    onEarnStar={() => handleEarnStar(1)}
+                    selectedWorksheetId={selectedTvWorksheetId}
+                    onSelectWorksheetId={(id) => setSelectedTvWorksheetId(id)}
+                  />
                 )}
 
                 {currentTab === 'on-tap' && (
@@ -760,18 +925,24 @@ export default function App() {
         {/* Footer */}
         <footer className="no-print mt-10 border-t border-amber-200/80 bg-white/70 py-4 px-4 text-center text-sm text-slate-600">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>Bé Học Toán Lớp 2 · Giúp con vững bước tư duy toán học</span>
+            <span>
+              {activeSubject === 'tieng-viet'
+                ? 'Bé Học Tiếng Việt Lớp 2 · Đọc hiểu & Luyện từ câu theo SGK'
+                : 'Bé Học Toán Lớp 2 · Giúp con vững bước tư duy toán học'}
+            </span>
             <div className="flex items-center gap-3">
               <span>
                 Bé đã đạt được <strong className="text-amber-700 font-bold">{stars} ★</strong>
               </span>
-              <button
-                type="button"
-                onClick={() => setIsPrintOpen(true)}
-                className="min-h-[44px] px-3 py-1.5 text-amber-800 font-bold hover:underline cursor-pointer"
-              >
-                In phiếu bài tập A4
-              </button>
+              {activeSubject === 'toan' && (
+                <button
+                  type="button"
+                  onClick={() => setIsPrintOpen(true)}
+                  className="min-h-[44px] px-3 py-1.5 text-amber-800 font-bold hover:underline cursor-pointer"
+                >
+                  In phiếu bài tập A4
+                </button>
+              )}
             </div>
           </div>
         </footer>

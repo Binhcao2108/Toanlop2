@@ -23,6 +23,8 @@ import { useVirtualKeypad } from '../context/VirtualKeypadContext';
 
 interface TiengVietSectionProps {
   onEarnStar: () => void;
+  selectedWorksheetId?: string;
+  onSelectWorksheetId?: (id: string) => void;
 }
 
 export interface TiengVietOption {
@@ -1775,11 +1777,20 @@ export const TIENG_VIET_WORKSHEETS: TiengVietWorksheet[] = [
   },
 ];
 
-export const TiengVietSection: React.FC<TiengVietSectionProps> = ({ onEarnStar }) => {
+export const TiengVietSection: React.FC<TiengVietSectionProps> = ({
+  onEarnStar,
+  selectedWorksheetId: externalWorksheetId,
+  onSelectWorksheetId,
+}) => {
   const { closeKeypad } = useVirtualKeypad();
-  const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(
+  const [internalWorksheetId, setInternalWorksheetId] = useState<string>(
     TIENG_VIET_WORKSHEETS[0].id
   );
+  const selectedWorksheetId = externalWorksheetId || internalWorksheetId;
+  const updateSelectedWorksheetId = (nextId: string) => {
+    setInternalWorksheetId(nextId);
+    onSelectWorksheetId?.(nextId);
+  };
   // Display mode: 'all-in-one' (giống tờ phiếu bài tập thật) or 'step-by-step' (từng câu 1 -> 10)
   const [viewMode, setViewMode] = useState<'all-in-one' | 'step-by-step'>('all-in-one');
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -1794,6 +1805,12 @@ export const TiengVietSection: React.FC<TiengVietSectionProps> = ({ onEarnStar }
   useEffect(() => {
     closeKeypad();
   }, [closeKeypad]);
+
+  // Reset question step index when externalWorksheetId changes
+  useEffect(() => {
+    setCurrentIndex(0);
+    setShowAnswerKey(false);
+  }, [selectedWorksheetId]);
 
   const currentWorksheet =
     TIENG_VIET_WORKSHEETS.find((w) => w.id === selectedWorksheetId) ||
@@ -1813,7 +1830,7 @@ export const TiengVietSection: React.FC<TiengVietSectionProps> = ({ onEarnStar }
 
   const handleSelectWorksheet = (worksheetId: string) => {
     sound.playClick();
-    setSelectedWorksheetId(worksheetId);
+    updateSelectedWorksheetId(worksheetId);
     setCurrentIndex(0);
     setShowAnswerKey(false);
   };
@@ -1826,7 +1843,7 @@ export const TiengVietSection: React.FC<TiengVietSectionProps> = ({ onEarnStar }
     const randomPick =
       otherWorksheets[Math.floor(Math.random() * otherWorksheets.length)] ||
       TIENG_VIET_WORKSHEETS[0];
-    setSelectedWorksheetId(randomPick.id);
+    updateSelectedWorksheetId(randomPick.id);
     setCurrentIndex(0);
     setShowAnswerKey(false);
   };
