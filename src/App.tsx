@@ -5,6 +5,7 @@ import { CongTruCoNhoSection } from './components/CongTruCoNhoSection';
 import { LienTruocLienSauSection } from './components/LienTruocLienSauSection';
 import { SoSanhDaySoSection } from './components/SoSanhDaySoSection';
 import { ToanDoSection } from './components/ToanDoSection';
+import { TiengVietSection } from './components/TiengVietSection';
 import { OnTapSection } from './components/OnTapSection';
 import { KiemTraSection } from './components/KiemTraSection';
 import { TaiKhoanSection } from './components/TaiKhoanSection';
@@ -489,6 +490,13 @@ export default function App() {
       color: 'bg-indigo-100/70 border-indigo-300 text-indigo-900',
     },
     {
+      id: 'tieng-viet',
+      title: 'Tiếng Việt Lớp 2',
+      sub: 'Đọc hiểu Những Ngày Giáp Tết & Luyện từ câu',
+      icon: <BookOpen className="w-5 h-5 text-rose-700" />,
+      color: 'bg-rose-100/70 border-rose-300 text-rose-900',
+    },
+    {
       id: 'on-tap',
       title: 'Ôn Tập',
       sub: 'Đề trắc nghiệm 10 câu tự sinh đủ 7 dạng toán',
@@ -687,6 +695,10 @@ export default function App() {
 
                 {currentTab === 'toan-do' && (
                   <ToanDoSection onEarnStar={() => handleEarnStar(1)} />
+                )}
+
+                {currentTab === 'tieng-viet' && (
+                  <TiengVietSection onEarnStar={() => handleEarnStar(1)} />
                 )}
 
                 {currentTab === 'on-tap' && (

@@ -129,6 +129,13 @@ export const Header: React.FC<HeaderProps> = ({
       badgeColor: 'bg-sky-100 text-sky-800 border-sky-300',
     },
     {
+      id: 'tieng-viet',
+      label: 'Tiếng Việt 2',
+      desc: 'Đọc hiểu & Luyện từ câu (+1 ★/câu)',
+      icon: <BookOpen className="w-4 h-4 shrink-0" />,
+      badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
+    },
+    {
       id: 'on-tap',
       label: 'Ôn Tập',
       desc: 'Đề trắc nghiệm 10 câu tự sinh',
