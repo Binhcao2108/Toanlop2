@@ -12,6 +12,7 @@ export type TopicTab =
   | 'so-sanh'
   | 'toan-do'
   | 'tieng-viet'
+  | 'phan-loai-tu'
   | 'kiem-tra'
   | 'xep-hang'
   | 'tai-khoan'

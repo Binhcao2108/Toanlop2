@@ -21,6 +21,7 @@ import {
   GraduationCap,
   Trophy,
   ShieldCheck,
+  Tags,
 } from 'lucide-react';
 import { TopicTab, StudentAccount, SubjectMode } from '../types/math';
 import { ScoreSyncStatus } from '../utils/scoreSync';
@@ -175,23 +176,34 @@ export const Header: React.FC<HeaderProps> = ({
     },
   ];
 
-  const tiengVietSubjectItems: NavStripItem[] = TIENG_VIET_WORKSHEETS.map((ws, idx) => ({
-    key: `tv-${ws.id}`,
-    label: ws.shortTitle,
-    desc: `${ws.readingTitle} (${ws.author}) • 10 câu`,
-    icon: <BookOpenText className="w-4 h-4 shrink-0" />,
-    badgeColor:
-      idx % 3 === 0
-        ? 'bg-rose-100 text-rose-800 border-rose-300'
-        : idx % 3 === 1
-          ? 'bg-amber-100 text-amber-800 border-amber-300'
-          : 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    isActive: currentTab === 'tieng-viet' && selectedTvWorksheetId === ws.id,
-    onClick: () => {
-      onSelectTvWorksheet(ws.id);
-      onSelectTab('tieng-viet');
+  const tiengVietSubjectItems: NavStripItem[] = [
+    {
+      key: 'phan-loai-tu',
+      label: 'Sự Vật • Đặc Điểm • Hành Động',
+      desc: 'Phân biệt 3 nhóm từ qua câu văn & cụm từ (+1 ★/câu)',
+      icon: <Tags className="w-4 h-4 shrink-0" />,
+      badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+      isActive: currentTab === 'phan-loai-tu',
+      onClick: () => onSelectTab('phan-loai-tu'),
     },
-  }));
+    ...TIENG_VIET_WORKSHEETS.map((ws, idx) => ({
+      key: `tv-${ws.id}`,
+      label: ws.shortTitle,
+      desc: `${ws.readingTitle} (${ws.author}) • 10 câu`,
+      icon: <BookOpenText className="w-4 h-4 shrink-0" />,
+      badgeColor:
+        idx % 3 === 0
+          ? 'bg-rose-100 text-rose-800 border-rose-300'
+          : idx % 3 === 1
+            ? 'bg-amber-100 text-amber-800 border-amber-300'
+            : 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      isActive: currentTab === 'tieng-viet' && selectedTvWorksheetId === ws.id,
+      onClick: () => {
+        onSelectTvWorksheet(ws.id);
+        onSelectTab('tieng-viet');
+      },
+    })),
+  ];
 
   const utilityItems: NavStripItem[] = [
     {
@@ -382,7 +394,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <LayoutGrid className="w-4 h-4 shrink-0 text-amber-700" />
               )}
               <span className="hidden md:inline">
-                {activeSubject === 'tieng-viet' ? 'Menu 10 Đề TV' : 'Menu Chủ Đề'}
+                {activeSubject === 'tieng-viet' ? 'Menu Tiếng Việt' : 'Menu Chủ Đề'}
               </span>
             </button>
           </div>
@@ -679,7 +691,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-black text-amber-950 uppercase tracking-wide">
                   {activeSubject === 'tieng-viet'
-                    ? '📖 Môn Tiếng Việt Lớp 2 (10 Đề Đọc hiểu & Luyện từ câu)'
+                    ? '📖 Môn Tiếng Việt Lớp 2 (Phân loại 3 nhóm từ & 10 Đề Đọc hiểu)'
                     : '🔢 Môn Toán Lớp 2 (Chủ đề bài học & tiện ích)'}
                 </span>
                 <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-amber-200">

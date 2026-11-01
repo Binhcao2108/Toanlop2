@@ -15,6 +15,7 @@ import {
   ListChecks,
   BookMarked,
   Shuffle,
+  Tags,
   X,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -25,6 +26,7 @@ interface TiengVietSectionProps {
   onEarnStar: () => void;
   selectedWorksheetId?: string;
   onSelectWorksheetId?: (id: string) => void;
+  onOpenWordClassifier?: () => void;
 }
 
 export interface TiengVietOption {
@@ -1781,6 +1783,7 @@ export const TiengVietSection: React.FC<TiengVietSectionProps> = ({
   onEarnStar,
   selectedWorksheetId: externalWorksheetId,
   onSelectWorksheetId,
+  onOpenWordClassifier,
 }) => {
   const { closeKeypad } = useVirtualKeypad();
   const [internalWorksheetId, setInternalWorksheetId] = useState<string>(
@@ -1926,6 +1929,20 @@ export const TiengVietSection: React.FC<TiengVietSectionProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onOpenWordClassifier && (
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  onOpenWordClassifier();
+                }}
+                className="min-h-[42px] px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-700 hover:to-amber-600 text-white font-black text-sm shadow-xs flex items-center gap-1.5 cursor-pointer transition-all"
+              >
+                <Tags className="w-4 h-4" />
+                <span>Bài Tập: Sự Vật • Đặc Điểm • Hành Động</span>
+              </button>
+            )}
+
             {currentWorksheet.id === 'nhung-ngay-giap-tet' && (
               <button
                 type="button"

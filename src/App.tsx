@@ -6,6 +6,7 @@ import { LienTruocLienSauSection } from './components/LienTruocLienSauSection';
 import { SoSanhDaySoSection } from './components/SoSanhDaySoSection';
 import { ToanDoSection } from './components/ToanDoSection';
 import { TiengVietSection, TIENG_VIET_WORKSHEETS } from './components/TiengVietSection';
+import { PhanLoaiTuSection } from './components/PhanLoaiTuSection';
 import { OnTapSection } from './components/OnTapSection';
 import { KiemTraSection } from './components/KiemTraSection';
 import { TaiKhoanSection } from './components/TaiKhoanSection';
@@ -53,6 +54,7 @@ import {
   LogOut,
   ShieldCheck,
   Trophy,
+  Tags,
 } from 'lucide-react';
 import { VirtualKeypadProvider } from './context/VirtualKeypadContext';
 import { FloatingVirtualKeypad } from './components/FloatingVirtualKeypad';
@@ -444,15 +446,17 @@ export default function App() {
   const handleSelectSubject = (subject: SubjectMode) => {
     setActiveSubject(subject);
     if (subject === 'tieng-viet') {
-      setCurrentTab('tieng-viet');
-    } else if (currentTab === 'tieng-viet') {
+      if (currentTab !== 'tieng-viet' && currentTab !== 'phan-loai-tu') {
+        setCurrentTab('phan-loai-tu');
+      }
+    } else if (currentTab === 'tieng-viet' || currentTab === 'phan-loai-tu') {
       setCurrentTab('tach-gop');
     }
   };
 
   const handleSelectTab = (tab: TopicTab) => {
     setCurrentTab(tab);
-    if (tab === 'tieng-viet') {
+    if (tab === 'tieng-viet' || tab === 'phan-loai-tu') {
       setActiveSubject('tieng-viet');
     } else if (
       tab === 'tach-gop' ||
@@ -571,23 +575,34 @@ export default function App() {
     color: string;
     isCurrent: boolean;
     onClick: () => void;
-  }[] = TIENG_VIET_WORKSHEETS.map((ws, idx) => ({
-    key: `tv-${ws.id}`,
-    title: ws.shortTitle,
-    sub: `${ws.readingTitle} (${ws.author}) • 10 câu (+1 ★/câu)`,
-    icon: <BookOpenText className="w-5 h-5 text-rose-700" />,
-    color:
-      idx % 3 === 0
-        ? 'bg-rose-100/70 border-rose-300 text-rose-900'
-        : idx % 3 === 1
-          ? 'bg-amber-100/70 border-amber-300 text-amber-900'
-          : 'bg-emerald-100/70 border-emerald-300 text-emerald-900',
-    isCurrent: currentTab === 'tieng-viet' && selectedTvWorksheetId === ws.id,
-    onClick: () => {
-      setSelectedTvWorksheetId(ws.id);
-      handleSelectTab('tieng-viet');
+  }[] = [
+    {
+      key: 'phan-loai-tu',
+      title: 'Sự Vật • Đặc Điểm • Hành Động',
+      sub: 'Phân biệt 3 nhóm từ qua câu văn & cụm từ (+1 ★/câu)',
+      icon: <Tags className="w-5 h-5 text-indigo-700" />,
+      color: 'bg-indigo-100/80 border-indigo-300 text-indigo-900',
+      isCurrent: currentTab === 'phan-loai-tu',
+      onClick: () => handleSelectTab('phan-loai-tu'),
     },
-  }));
+    ...TIENG_VIET_WORKSHEETS.map((ws, idx) => ({
+      key: `tv-${ws.id}`,
+      title: ws.shortTitle,
+      sub: `${ws.readingTitle} (${ws.author}) • 10 câu (+1 ★/câu)`,
+      icon: <BookOpenText className="w-5 h-5 text-rose-700" />,
+      color:
+        idx % 3 === 0
+          ? 'bg-rose-100/70 border-rose-300 text-rose-900'
+          : idx % 3 === 1
+            ? 'bg-amber-100/70 border-amber-300 text-amber-900'
+            : 'bg-emerald-100/70 border-emerald-300 text-emerald-900',
+      isCurrent: currentTab === 'tieng-viet' && selectedTvWorksheetId === ws.id,
+      onClick: () => {
+        setSelectedTvWorksheetId(ws.id);
+        handleSelectTab('tieng-viet');
+      },
+    })),
+  ];
 
   const utilityCards: {
     key: string;
@@ -668,7 +683,7 @@ export default function App() {
                   </div>
                   <p className="text-sm text-slate-600">
                     {activeSubject === 'tieng-viet'
-                      ? 'Chọn 1 trong 10 đề đọc hiểu & luyện từ câu bên dưới (mỗi câu đúng +1 ★):'
+                      ? 'Chọn bài tập Phân biệt 3 nhóm từ (Sự vật, Đặc điểm, Hành động) hoặc 10 đề đọc hiểu bên dưới (mỗi câu đúng +1 ★):'
                       : 'Chọn 1 chủ đề Toán lớp 2 bên dưới để luyện tập với hình ảnh trực quan sinh động:'}
                   </p>
                 </div>
@@ -704,7 +719,7 @@ export default function App() {
                       }`}
                     >
                       <BookOpenText className="w-4 h-4 shrink-0" />
-                      <span>Môn Tiếng Việt (10 Đề)</span>
+                      <span>Môn Tiếng Việt</span>
                     </button>
                   </div>
 
@@ -858,11 +873,19 @@ export default function App() {
                   <ToanDoSection onEarnStar={() => handleEarnStar(1)} />
                 )}
 
+                {currentTab === 'phan-loai-tu' && (
+                  <PhanLoaiTuSection
+                    onEarnStar={() => handleEarnStar(1)}
+                    onSwitchToReadingWorksheets={() => handleSelectTab('tieng-viet')}
+                  />
+                )}
+
                 {currentTab === 'tieng-viet' && (
                   <TiengVietSection
                     onEarnStar={() => handleEarnStar(1)}
                     selectedWorksheetId={selectedTvWorksheetId}
                     onSelectWorksheetId={(id) => setSelectedTvWorksheetId(id)}
+                    onOpenWordClassifier={() => handleSelectTab('phan-loai-tu')}
                   />
                 )}
 
